@@ -1,84 +1,133 @@
-# Turborepo starter
+# Goss Up
 
-This Turborepo starter is maintained by the Turborepo core team.
+**Goss Up** is a monorepo-based project using **Turborepo**, consisting of three applications and two shared packages. The project integrates modern technologies such as **React**, **Node.js**, **Kafka**, **MongoDB**, and **Firebase Cloud Messaging** to provide real-time communication and backend functionality.
 
-## Using this example
+## Note
+This is monorepo for gossup-ui and gossup-server, further development and commits will happen in this repo.
 
-Run the following command:
+## Project Structure
 
-```sh
-npx create-turbo@latest
+This monorepo contains the following:
+
+### Apps
+1. **Frontend (React + TypeScript)**:  
+   A **React** application using **TypeScript** for building the user interface.
+   
+2. **Backend (Node.js + Express)**:  
+   A **Node.js** server built with **ExpressJS** to handle API requests and other backend logic.
+
+3. **Consumers (Kafka Consumers)**:  
+   Kafka consumers that listen for and process messages from Kafka topics, enabling real-time data streaming.
+
+### Shared Packages
+1. **shared-constants**:  
+   A package containing shared constants used throughout the project.
+   
+2. **db-models**:  
+   A package containing MongoDB Mongoose models used for interacting with the database.
+
+## Tech Stack
+
+### Frontend
+- **React**: JavaScript library for building user interfaces.
+- **TypeScript**: A superset of JavaScript that adds type-checking and improves developer experience.
+- **Redux Toolkit**: Efficient state management with Redux and less boilerplate.
+- **Tailwind CSS**: A utility-first CSS framework for building custom designs rapidly.
+- **Shadcn UI**: A set of UI components for building clean and consistent user interfaces.
+
+### Backend
+- **Node.js**: A JavaScript runtime for building scalable network applications.
+- **ExpressJS**: Fast and minimal web framework for Node.js.
+- **MongoDB**: A NoSQL database for storing and querying data.
+- **WebSocket**: Real-time bi-directional communication between clients and the backend.
+- **Redis**: Key-value store used for caching and managing session data.
+- **Kafka**: Distributed event streaming platform for real-time data processing.
+- **Firebase Cloud Messaging**: Service for sending notifications to users across different platforms.
+
+## Features
+
+- **Real-time Communication**: WebSocket integration enables real-time communication between frontend and backend.
+- **Push Notifications**: Firebase Cloud Messaging is used to send push notifications to frontend users.
+- **Kafka Integration**: Kafka consumers process events in real-time from Kafka topics.
+- **State Management**: Redux Toolkit manages the state efficiently in the React frontend.
+- **MongoDB**: The backend uses MongoDB for data storage and retrieval, integrated via Mongoose models.
+- **Modular Architecture**: Shared constants and MongoDB models are managed in separate packages to keep the codebase organized.
+
+## Getting Started
+
+### Prerequisites
+
+Before you begin, ensure that you have the following installed:
+
+- **Node.js** (v14 or higher)
+- **npm** (or **Yarn**)
+- **Turborepo** (for managing the monorepo)
+
+### Installation
+
+1. **Clone the repository**:
+
+   ```bash
+   git clone https://github.com/your-username/goss-up.git
+   cd goss-up
+   ```
+
+2. **Install dependencies**:
+
+   From the root of the monorepo, run:
+
+   ```bash
+   npm install
+   ```
+
+3. **Start the apps**:
+
+   You can start the applications individually or use Turborepo to run them together.
+
+   - **Frontend (React + TypeScript)**:  
+     Navigate to the `frontend` folder and run:
+
+     ```bash
+     npm run dev
+     ```
+
+   - **Backend (Node.js + Express)**:  
+     Navigate to the `backend` folder and run:
+
+     ```bash
+     npm run dev
+     ```
+
+   - **Consumers (Kafka Consumers)**:  
+     Navigate to the `consumers` folder and run:
+
+     ```bash
+     npm run dev
+     ```
+
+### Running the Project with Turborepo
+
+To start all apps together, you can use Turborepo:
+
+```bash
+npm run dev
 ```
 
-## What's inside?
+This command will start the frontend, backend, and consumers concurrently.
 
-This Turborepo includes the following packages/apps:
+### Environment Variables
 
-### Apps and Packages
+Make sure you set up the necessary environment variables in `.env` files in the respective app directories:
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+1. **Backend**:  
+   In the `backend` folder, create a `.env` file with API keys, database URLs, and Kafka settings.
+   
+2. **Frontend**:  
+   In the `frontend` folder, configure `.env` for variables like the API URL for the backend:
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+   ```env
+   REACT_APP_API_URL=http://localhost:5173
+   ```
 
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-pnpm build
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-pnpm dev
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-npx turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-npx turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/repo/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+3. **Consumers**:  
+   Set up the required environment variables in the `consumers` app as needed (e.g., Kafka broker URLs).

@@ -1,0 +1,1 @@
+export const getJITBtnStyle ="py-3 px-2 cursor-pointer hover:bg-primary-2 dark:hover:bg-dark-2 rounded";
