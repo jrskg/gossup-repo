@@ -4,8 +4,7 @@ import { IChat } from '@/interface/chatInterface';
 import { cn } from '@/lib/utils';
 import { getLastMessageText, getMessageTimestamp } from '@/utils/utility';
 import { EllipsisVerticalIcon, PlusIcon } from 'lucide-react';
-import React, { memo, ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react';
-import Loader from '../Loader';
+import React, { memo, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import MyTab from '../MyTab';
 import SearchBar from '../SearchBar';
 import ChatListSkeleton from '../skeleton/ChatListSkeleton';
@@ -28,7 +27,7 @@ const ChatList: React.FC<ChatListProps> = ({
   const [createGroupModal, setCreateGroupModal] = useState(false);
   const [searchGroupChatOpen, setSearchGroupChatOpen] = useState(false);
 
-  const { _id: userId } = useContext(LoggedInUserContext)!;
+  const { _id: userId, name } = useContext(LoggedInUserContext)!;
   const { chatMap, orderedChatIds } = useContext(ChatsContext)!;
   const messages = useContext(MessagesContext)!;
   const groupChats = useMemo(() => {
@@ -46,12 +45,9 @@ const ChatList: React.FC<ChatListProps> = ({
     handleSelectedChat(sc);
   }, []);
 
-  const rootElementRef = useRef<HTMLDivElement | null>(null);
   const {
-    loading,
-    moreLoading,
-    setLastElement
-  } = useGetAllChats(orderedChatIds, rootElementRef);
+    loading
+  } = useGetAllChats(orderedChatIds, userId);
 
   const handleSearchBarFocus = () => {
     if (selectedTab === "group") setSearchGroupChatOpen(true);
@@ -77,7 +73,7 @@ const ChatList: React.FC<ChatListProps> = ({
         groupChats={groupChats}
       />
       <div className='flex items-center justify-between px-5 py-2 h-[50px]'>
-        <p className='text-xl font-bold'>Chat List</p>
+        <p className='text-xl font-bold'>{name}</p>
         <DropdownMenu open={dropDownOpen} onOpenChange={(ok) => setDropDownOpen(ok)}>
           <DropdownMenuTrigger>
             <EllipsisVerticalIcon className='w-6 h-6 cursor-pointer' />
@@ -113,7 +109,7 @@ const ChatList: React.FC<ChatListProps> = ({
           />
         </>
       }
-      <div ref={rootElementRef} className={cn('absolute top-[132px] bottom-0 w-full overflow-auto py-2 px-1', loading && "top-[40px]")}>
+      <div className={cn('absolute top-[132px] bottom-0 w-full overflow-auto py-2 px-1', loading && "top-[40px]")}>
         {
           loading ? (<ChatListSkeleton />) : (
             (() => {
@@ -128,34 +124,19 @@ const ChatList: React.FC<ChatListProps> = ({
                       > <PlusIcon />Start a Chat</Button>
                     </InfoWrapper>
                   }
-                  return orderedChatIds.map((chid, i) => {
+                  return orderedChatIds.map((chid) => {
                     const ch = chatMap[chid];
-                    return i === orderedChatIds.length - 1 ?
-                      <div key={ch._id} ref={setLastElement}>
-                        <ChatCard
-                          key={ch._id}
-                          avatar={getChatAvatar(ch)}
-                          chatName={getChatName(ch)}
-                          lastMessage={getLastMessageText(ch.lastMessage)}
-                          lastMessageTime={ch.lastMessage && getMessageTimestamp(new Date(ch.updatedAt)).time}
-                          chat={ch}
-                          onChatClick={handleChatClick}
-                          isChatSelected={ch._id === selectedChat?._id}
-                          newMessageCount={messages[ch._id].newMessagesIds.length}
-                        />
-                      </div>
-                      :
-                      <ChatCard
-                        key={ch._id}
-                        avatar={getChatAvatar(ch)}
-                        chatName={getChatName(ch)}
-                        lastMessage={getLastMessageText(ch.lastMessage)}
-                        lastMessageTime={ch.lastMessage && getMessageTimestamp(new Date(ch.updatedAt)).time}
-                        chat={ch}
-                        onChatClick={handleChatClick}
-                        isChatSelected={ch._id === selectedChat?._id}
-                        newMessageCount={messages[ch._id].newMessagesIds.length}
-                      />
+                    return <ChatCard
+                      key={ch._id}
+                      avatar={getChatAvatar(ch)}
+                      chatName={getChatName(ch)}
+                      lastMessage={getLastMessageText(ch.lastMessage)}
+                      lastMessageTime={ch.lastMessage && getMessageTimestamp(new Date(ch.updatedAt)).time}
+                      chat={ch}
+                      onChatClick={handleChatClick}
+                      isChatSelected={ch._id === selectedChat?._id}
+                      newMessageCount={messages[ch._id].newMessagesIds.length}
+                    />
                   })
                 case "group":
                   if (groupChats.length === 0) {
@@ -187,7 +168,6 @@ const ChatList: React.FC<ChatListProps> = ({
             })()
           )
         }
-        {moreLoading && <Loader className='py-3' />}
       </div>
     </div>
   )

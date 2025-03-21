@@ -21,14 +21,16 @@ interface MessageCardProps {
   senderId: string;
   senderName: string;
   senderAvatar: string;
-  prevSenderId?: string;
+  // prevSenderId?: string;
   loggedInUserId: string;
+  nextSenderId?: string;
   content?: string;
   messgeType: MessageType;
   deliveryStatus: DeliveryStatus;
   attachments: IAttachment[];
   createdAt: string;
-  prevCreatedAt?: string;
+  // prevCreatedAt?: string;
+  nextCreatedAt?: string;
   chatType: ChatType
 }
 const MessageCard: React.FC<MessageCardProps> = ({
@@ -36,13 +38,15 @@ const MessageCard: React.FC<MessageCardProps> = ({
   senderId,
   senderAvatar,
   senderName,
-  prevSenderId,
+  // prevSenderId,
+  nextSenderId,
   content,
   messgeType,
   deliveryStatus,
   attachments,
   createdAt,
-  prevCreatedAt,
+  // prevCreatedAt,
+  nextCreatedAt,
   chatType
 }) => {
   console.log("MessageCard rendering... " + Math.random());
@@ -100,37 +104,38 @@ const MessageCard: React.FC<MessageCardProps> = ({
         );
     }
   };
-  // const { time, date } = getMessageTimestamp(new Date(parseInt(createdAt)));
-  // const { date: prevDate } = getMessageTimestamp(prevCreatedAt ? new Date(parseInt(prevCreatedAt)) : undefined);
+
   const { time, date } = getMessageTimestamp(new Date(createdAt));
-  const { date: prevDate } = getMessageTimestamp(prevCreatedAt ? new Date(prevCreatedAt) : undefined);
+  const { date: nextDate } = getMessageTimestamp(nextCreatedAt ? new Date(nextCreatedAt) : undefined);
+
   return (
     <>
-      {date !== prevDate &&
-        <div className='w-full flex justify-center items-center mb-2'>
+      {nextDate === "" &&
+        <div className='w-full flex justify-center items-center my-2'>
           <p className='bg-secondary text-sm dark:bg-dark-3 px-2 py-1 rounded-md font-bold font-sans'>
-            {prevDate ? prevDate : date}
+            {date}
           </p>
-        </div>}
+        </div>
+      }
       <div className={cn("relative flex w-full mb-[2px]", getMainConatainerStyle(senderId, loggedInUserId))}>
-        <Avatar className={cn("w-8 h-8", getAvatarStyle(senderId, loggedInUserId, chatType, prevSenderId))}>
+        <Avatar className={cn("w-8 h-8", getAvatarStyle(senderId, loggedInUserId, chatType, nextSenderId))}>
           <AvatarImage className='object-cover' src={senderAvatar} />
           <AvatarFallback>U</AvatarFallback>
         </Avatar>
         <div className={
           cn("z-10 relative px-2 py-1 max-w-[70%]",
             loggedInUserId === senderId ? "bg-senderMessageColor dark:bg-senderMessageColorDark" : "bg-primary-1 dark:bg-dark-3",
-            getMessageBoxStyle(senderId, loggedInUserId, chatType, prevSenderId))
+            getMessageBoxStyle(senderId, loggedInUserId, chatType, nextSenderId))
         }>
           <div className={
             cn("-z-10 absolute h-0 w-0 border-l-[20px] border-t-[20px] border-r-[20px] border-l-transparent border-r-transparent top-0",
               loggedInUserId === senderId ? "border-t-senderMessageColor dark:border-t-senderMessageColorDark" : "border-t-primary-1 dark:border-t-dark-3",
-              getTriangleStyle(senderId, loggedInUserId, prevSenderId))
+              getTriangleStyle(senderId, loggedInUserId, nextSenderId))
           } />
-          <p className={cn("font-bold text-sm", getNameStyle(senderId, loggedInUserId, chatType, prevSenderId))}>
+          <p className={cn("font-bold text-sm", getNameStyle(senderId, loggedInUserId, chatType, nextSenderId))}>
             {senderName}
           </p>
-          <div className={cn("flex", 
+          <div className={cn("flex",
             content && content.length > 20 ? "flex-col" : "flex-row gap-2",
             messgeType === "file" && "flex-col"
           )}>
@@ -169,6 +174,13 @@ const MessageCard: React.FC<MessageCardProps> = ({
           </div>
         </div>
       </div>
+      {date !== nextDate && nextDate !== "" &&
+        <div className='w-full flex justify-center items-center my-2'>
+          <p className='bg-secondary text-sm dark:bg-dark-3 px-2 py-1 rounded-md font-bold font-sans'>
+            {date}
+          </p>
+        </div>
+      }
     </>
   )
 }

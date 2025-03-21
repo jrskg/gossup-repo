@@ -80,46 +80,47 @@ const getMessageTimestamp = (date?: Date): { time: string, date?: string } => {
   }
 };
 
+//where ever you nsId (nextSenderId) that is used when the message container is flex-col-reverse but in case of normal flow use psId(prevSenderId) simply replace with psId and make changes to MessageCard and MessageContainer to send prevSenderId
 const getMainConatainerStyle = (sId: string, lguId: string): string => {
   return sId === lguId ?
     'flex-row-reverse' :
     'flex-row gap-2';
 }
-const getAvatarStyle = (sId: string, lguId: string, chType: ChatType, psId?: string): string => {
+const getAvatarStyle = (sId: string, lguId: string, chType: ChatType, nsId?: string): string => {
   if (chType === "one-to-one") {
     return "hidden";
   }
   else if (chType === "group") {
-    if (sId === lguId || sId === psId) {
+    if (sId === lguId || sId === nsId) {
       return "hidden";
     }
   }
   return "block";
 }
-const getMessageBoxStyle = (sId: string, lguId: string, chType: ChatType, psId?: string): string => {
-  const isAvatarVisible = getAvatarStyle(sId, lguId, chType, psId) === "block";
+const getMessageBoxStyle = (sId: string, lguId: string, chType: ChatType, nsId?: string): string => {
+  const isAvatarVisible = getAvatarStyle(sId, lguId, chType, nsId) === "block";
   if (sId === lguId) {
-    return sId === psId ? "mr-2 rounded-xl" : "mr-2 rounded-xl rounded-tr-none";
+    return sId === nsId ? "mr-2 rounded-xl" : "mr-2 rounded-xl rounded-tr-none";
     // return sId === psId ? "rounded-3xl" : "rounded-3xl rounded-tr-none";
   } else if (chType === "one-to-one") {
     // return sId === psId ? "rounded-3xl" : "rounded-3xl rounded-tl-none";
-    return sId === psId ? "ml-2 rounded-xl" : "ml-2 rounded-xl rounded-tl-none";
+    return sId === nsId ? "ml-2 rounded-xl" : "ml-2 rounded-xl rounded-tl-none";
   }
   return isAvatarVisible ? "rounded-xl rounded-tl-none" : "rounded-xl ml-10";
 }
 
-const getTriangleStyle = (sId: string, lguId: string, psId?: string): string => {
+const getTriangleStyle = (sId: string, lguId: string, nsId?:string): string => {
   if (sId === lguId) {
-    return sId === psId ? "hidden" : "-right-3";
+    return sId === nsId ? "hidden" : "-right-3";
   }
-  return sId === psId ? "hidden" : "-left-3";
+  return sId === nsId ? "hidden" : "-left-3";
 }
 
-const getNameStyle = (sId: string, lguId: string, chType: ChatType, psId?: string): string => {
+const getNameStyle = (sId: string, lguId: string, chType: ChatType, nsId?: string): string => {
   if (sId === lguId) {
     return "hidden";
   }
-  return getAvatarStyle(sId, lguId, chType, psId);
+  return getAvatarStyle(sId, lguId, chType, nsId);
 }
 
 const getDateStyle = (sId: string, lguId: string, chType: ChatType): string => {

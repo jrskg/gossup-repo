@@ -1,19 +1,19 @@
 import { ChatsContext } from "@/context/contexts";
-import type { IChat, IGetChatsResponse, IGetSingleChatResponse, Participants, ParticipantsMap } from "@/interface/chatInterface";
+import { useSelectedChatRef } from "@/context/selectedChatRefContext";
+import { useSocket } from "@/context/socketContext";
+import type { IChat, IGetChatsResponse, IGetSingleChatResponse, MessagesPerChat, Participants, ParticipantsMap } from "@/interface/chatInterface";
 import type { Image, ResponseWithData, ResponseWithoutData } from "@/interface/interface";
-import { appendToChatState, setChatState } from "@/redux/slices/chats";
+import { setChatState } from "@/redux/slices/chats";
+import { initilizeMessagesTemp, Messages, setMessages, transferNewToSeen } from "@/redux/slices/messages";
+import { setSelectedChat } from "@/redux/slices/selectedChat";
 import instance from "@/utils/axiosInstance";
+import { SOCKET_EVENTS } from "@/utils/constants";
 import { AxiosError } from "axios";
 import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import defaultAvatar from "../assets/defaultAvatar.jpg";
 import { useAppDispatch } from "./hooks";
-import { useInfiniteScroll } from "./useInfiniteScroll";
-import { useSelectedChatRef } from "@/context/selectedChatRefContext";
-import { useSocket } from "@/context/socketContext";
-import { setSelectedChat } from "@/redux/slices/selectedChat";
-import { SOCKET_EVENTS } from "@/utils/constants";
-import { initilizeMessagesTemp, transferNewToSeen } from "@/redux/slices/messages";
+import { IMessageStatusUpdatePayload } from "@/interface/socketEvents";
 
 type ChatReturn = {
   chat: IChat,
@@ -49,52 +49,91 @@ const useSetSelectedChat = () => {
   return handleSelectedChat
 }
 
-const useGetAllChats = (orderedChatIds: string[], rootElement: React.MutableRefObject<HTMLDivElement | null>) => {
+const useGetAllChats = (orderedChatIds: string[], loggedInUserId: string) => {
   const [loading, setLoading] = useState(false);
-  const [moreLoading, setMoreLoading] = useState(false);
   const dispatch = useAppDispatch();
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const { socket } = useSocket();
 
-  const { setLastElement } = useInfiniteScroll({
-    root: rootElement.current,
-    threshold: 0.5,
-    isLoading: moreLoading,
-    hasMore,
-    onLoadMore: async () => {
-      setPage(prevPage => prevPage + 1);
-      await getAllChats(page + 1);
+  const parseStoreAndEmit = (messagesPerChat: MessagesPerChat[]) => {
+    if (!messagesPerChat || messagesPerChat.length === 0) {
+      console.warn("⚠️ No messages to process.");
+      return;
     }
-  })
+    if (!loggedInUserId) {
+      console.error("❌ loggedInUserId is undefined");
+      return;
+    }
 
-  const getAllChats = async (page: number) => {
+    const messagesForStore: Messages = {};
+    const messagesToStatusUpdate: Record<string, IMessageStatusUpdatePayload[]> = {};
+    messagesPerChat.forEach(({ _id: chatId, messages }) => {
+      messagesForStore[chatId] = {
+        newMessages: {},
+        seenMessages: {},
+        newMessagesIds: [],
+        seenMessagesIds: [],
+        page: 2,
+        hasMore: true
+      };
+
+      messages.forEach(message => {
+        if (message.senderId !== loggedInUserId && message.deliveryStatus === "sent") {
+          messagesForStore[chatId].newMessages[message._id] = message;
+          messagesForStore[chatId].newMessagesIds.push(message._id);
+
+          if (!messagesToStatusUpdate[message.chatId]) {
+            messagesToStatusUpdate[message.chatId] = [];
+          }
+
+          messagesToStatusUpdate[message.chatId].push({
+            messageId: message._id,
+            status: "delivered",
+            roomId: message.chatId,
+            senderId: message.senderId
+          });
+        } else {
+          messagesForStore[chatId].seenMessages[message._id] = message;
+          messagesForStore[chatId].seenMessagesIds.push(message._id);
+        }
+      });
+      // messagesForStore[chatId].newMessagesIds.reverse();
+      // messagesForStore[chatId].seenMessagesIds.reverse();
+    });
+
+    dispatch(setMessages(messagesForStore));
+
+    if (socket) {
+      Object.values(messagesToStatusUpdate).forEach(updates => {
+        if (updates.length > 0) {
+          socket.emit(SOCKET_EVENTS.MESSAGE_STATUS_UPDATE, updates);
+        }
+      })
+    }
+  };
+
+  const getAllChats = async () => {
     try {
-      if (page === 1) setLoading(true);
-      else setMoreLoading(true);
-      const { data } = await instance.get<ResponseWithData<IGetChatsResponse>>(`/chat/all?page=${page}`);
+      setLoading(true);
+      const { data } = await instance.get<ResponseWithData<IGetChatsResponse>>(`/chat/all`);
       if (data.success) {
-        if (page === 1) dispatch(setChatState({ chats: data.data.chats, participants: data.data.participants }));
-        else dispatch(appendToChatState({ chats: data.data.chats, participants: data.data.participants }));
-        setHasMore(data.data.hasMore);
+        dispatch(setChatState({ chats: data.data.chats, participants: data.data.participants }));
         dispatch(initilizeMessagesTemp(data.data.chats.map(ch => ch._id)));
+        parseStoreAndEmit(data.data.messagesPerChat);
       }
     } catch (error) {
       if (error instanceof AxiosError && error.response) {
         toast.error(error.response.data.message);
       }
     } finally {
-      if (page === 1) setLoading(false);
-      else setMoreLoading(false);
+      setLoading(false);
     }
   }
   useEffect(() => {
-    if (orderedChatIds.length === 0) getAllChats(1);
+    if (orderedChatIds.length === 0) getAllChats();
   }, []);
 
   return {
     loading,
-    moreLoading,
-    setLastElement,
   }
 }
 const useGetParticipantsInfo = (participants: ParticipantsMap, userId: string) => {
@@ -332,7 +371,6 @@ const useUpdateGroupChat = (groupId: string) => {
 
 export {
   useChatActions, useCreateGroupChat, useGetAllChats,
-  useGetParticipantsInfo, useUpdateGroupChat,
-  useSetSelectedChat
+  useGetParticipantsInfo, useSetSelectedChat, useUpdateGroupChat
 };
 

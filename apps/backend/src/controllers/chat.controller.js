@@ -2,7 +2,7 @@ import { isValidObjectId, Types } from "mongoose";
 // import { Chat } from "../models/chat.model.js";
 // import { Friendship } from "../models/friendship.model.js";
 // import { User } from "../models/user.model.js";
-import {Chat, Friendship, User} from "@gossup/db-models";
+import { Chat, Friendship, Message, User } from "@gossup/db-models";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -93,14 +93,12 @@ export const createOneToOneChat = asyncHandler(async (req, res, next) => {
     return next(new ApiError(INTERNAL_SERVER_ERROR, "Something went wrong"));
   }
   newChat = newChat.toObject();
-  res
-    .status(CREATED)
-    .json(
-      new ApiResponse(CREATED, "Chat created", {
-        chatData: newChat,
-        participants,
-      })
-    );
+  res.status(CREATED).json(
+    new ApiResponse(CREATED, "Chat created", {
+      chatData: newChat,
+      participants,
+    })
+  );
 });
 
 export const createGroupChat = asyncHandler(async (req, res, next) => {
@@ -109,8 +107,17 @@ export const createGroupChat = asyncHandler(async (req, res, next) => {
   if (!groupName || groupName.trim() === "") {
     return next(new ApiError(BAD_REQUEST, "Group name is required"));
   }
-  if (!participants || !Array.isArray(participants) || participants.length < 2) {
-    return next(new ApiError(BAD_REQUEST, "participants is required and should be more than 1"));
+  if (
+    !participants ||
+    !Array.isArray(participants) ||
+    participants.length < 2
+  ) {
+    return next(
+      new ApiError(
+        BAD_REQUEST,
+        "participants is required and should be more than 1"
+      )
+    );
   }
 
   const validParticipantsIds = participants.filter((id) => isValidObjectId(id));
@@ -120,7 +127,7 @@ export const createGroupChat = asyncHandler(async (req, res, next) => {
   let users = await User.find({ _id: { $in: validParticipantsIds } })
     .select("_id name profilePic bio")
     .lean();
-    
+
   if (users.length !== validParticipantsIds.length) {
     return next(new ApiError(BAD_REQUEST, "Some user do not exists"));
   }
@@ -164,7 +171,10 @@ export const createGroupChat = asyncHandler(async (req, res, next) => {
   res
     .status(CREATED)
     .json(
-      new ApiResponse(CREATED, "Group chat created", { chatData: groupChat, participants: users })
+      new ApiResponse(CREATED, "Group chat created", {
+        chatData: groupChat,
+        participants: users,
+      })
     );
 });
 
@@ -235,8 +245,17 @@ const utilityForGroupAction = async (
 export const addParticipant = asyncHandler(async (req, res, next) => {
   const { groupId, participants } = req.body;
   const loggedInUserId = req.user._id.toString();
-  if (!participants || !Array.isArray(participants) || participants.length === 0) {
-    return next(new ApiError(BAD_REQUEST, "participants is required and should be at least one"));
+  if (
+    !participants ||
+    !Array.isArray(participants) ||
+    participants.length === 0
+  ) {
+    return next(
+      new ApiError(
+        BAD_REQUEST,
+        "participants is required and should be at least one"
+      )
+    );
   }
   const { success, message, statusCode, groupChat } =
     await utilityForGroupAction(groupId, participants, loggedInUserId);
@@ -244,21 +263,30 @@ export const addParticipant = asyncHandler(async (req, res, next) => {
 
   const participantsNotInGroup = new Set();
   participants.forEach((pId) => participantsNotInGroup.add(pId));
-  groupChat.participants.forEach((pId) => participantsNotInGroup.delete(pId.toString()));
+  groupChat.participants.forEach((pId) =>
+    participantsNotInGroup.delete(pId.toString())
+  );
 
-  if(participantsNotInGroup.size === 0) {
-    return next(new ApiError(BAD_REQUEST, "All given participants are already in the group"));
+  if (participantsNotInGroup.size === 0) {
+    return next(
+      new ApiError(
+        BAD_REQUEST,
+        "All given participants are already in the group"
+      )
+    );
   }
-  let users = await User.find({ _id: { $in: Array.from(participantsNotInGroup) } })
+  let users = await User.find({
+    _id: { $in: Array.from(participantsNotInGroup) },
+  })
     .select({ _id: 1, name: 1, profilePic: 1, bio: 1 })
     .lean();
-  if (users.length !== participantsNotInGroup.size) { 
+  if (users.length !== participantsNotInGroup.size) {
     return next(new ApiError(NOT_FOUND, "Some participants not found"));
   }
   const friendShipPairs = Array.from(participantsNotInGroup).map((pId) => {
-    return pId.toString() < loggedInUserId 
-    ? { userOneId: pId, userTwoId: loggedInUserId }
-    : { userOneId: loggedInUserId, userTwoId: pId };
+    return pId.toString() < loggedInUserId
+      ? { userOneId: pId, userTwoId: loggedInUserId }
+      : { userOneId: loggedInUserId, userTwoId: pId };
   });
 
   const friendships = await Friendship.find(
@@ -266,15 +294,17 @@ export const addParticipant = asyncHandler(async (req, res, next) => {
       $or: friendShipPairs,
       status: "accepted",
     },
-    { _id: 1}
+    { _id: 1 }
   ).lean();
   if (friendships && friendships.length !== participantsNotInGroup.size) {
     return next(new ApiError(NOT_FOUND, "You can only add friends to group"));
   }
-    
+
   groupChat.participants.push(...participantsNotInGroup);
   await groupChat.save();
-  res.status(OK).json(new ApiResponse(OK, "User added to group", {participants: users}));
+  res
+    .status(OK)
+    .json(new ApiResponse(OK, "User added to group", { participants: users }));
 });
 
 export const removeParticipant = asyncHandler(async (req, res, next) => {
@@ -352,7 +382,7 @@ export const leaveGroup = asyncHandler(async (req, res, next) => {
     return res.status(OK).json(new ApiResponse(OK, "You left the group"));
   }
   const aIdx = groupChat.admins.indexOf(loggedInUserId);
-  if(aIdx !== -1) {
+  if (aIdx !== -1) {
     groupChat.admins.splice(aIdx, 1);
   }
   if (aIdx !== -1 && groupChat.admins.length === 0) {
@@ -368,7 +398,8 @@ export const updateGroupIcon = asyncHandler(async (req, res, next) => {
   if (!groupId || groupId.trim() === "")
     return next(new ApiError(BAD_REQUEST, "Please provide group id"));
   const groupChat = await Chat.findById(groupId);
-  if (!groupChat || groupChat.chatType !== "group") return next(new ApiError(NOT_FOUND, "Group chat not found"));
+  if (!groupChat || groupChat.chatType !== "group")
+    return next(new ApiError(NOT_FOUND, "Group chat not found"));
   if (!groupChat.admins.includes(loggedInUserId))
     return next(new ApiError(BAD_REQUEST, "Only admins can update group icon"));
   if (!req.file)
@@ -442,55 +473,44 @@ export const searchGroupChat = asyncHandler(async (req, res, next) => {
 
 export const getAllChats = asyncHandler(async (req, res, next) => {
   const loggedInUserId = req.user._id.toString();
-  let page = isNaN(req.query.page) ? 1 : Number(req.query.page);
-  if (page < 1) page = 1;
-  const limit = 50;
   const chats = await Chat.aggregate([
-    { $match: { participants: Types.ObjectId.createFromHexString(loggedInUserId) } },
+    {
+      $match: {
+        participants: Types.ObjectId.createFromHexString(loggedInUserId),
+      },
+    },
     { $sort: { updatedAt: -1 } },
     {
-      $facet: {
-        data: [
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
+      $lookup: {
+        from: "messages",
+        localField: "lastMessageId",
+        foreignField: "_id",
+        as: "lastMessage",
+        pipeline: [
           {
-            $lookup: {
-              from: "messages",
-              localField: "lastMessageId",
-              foreignField: "_id",
-              as: "lastMessage",
-              pipeline: [
-                {
-                  $project: {
-                    messageType: 1,
-                    content: 1,
-                  },
-                },
-              ],
+            $project: {
+              messageType: 1,
+              content: 1,
             },
           },
-          {
-            $unwind: {
-              path: "$lastMessage",
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          {
-            $project:{
-              lastMessageId: 0
-            }
-          }
         ],
-        total: [{ $count: "count" }],
+      },
+    },
+    {
+      $unwind: {
+        path: "$lastMessage",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $project: {
+        lastMessageId: 0,
       },
     },
   ]);
-  const chatsData = chats[0].data;
-  const totalChats = chats[0].total[0] ? chats[0].total[0].count : 0;
-  const hasMore = page * limit < totalChats;
 
   const allUniqueParticipantsIds = new Set();
-  chatsData.forEach((chat) => {
+  chats.forEach((chat) => {
     chat.participants.forEach((participant) => {
       allUniqueParticipantsIds.add(participant._id);
     });
@@ -503,12 +523,30 @@ export const getAllChats = asyncHandler(async (req, res, next) => {
     { _id: 1, name: 1, profilePic: 1, bio: 1 }
   ).lean();
 
+  const chatIds = chats.map(ch => ch._id);
+  const messagesPerChat = await Message.aggregate([
+    {$match: {chatId: {$in: chatIds}}},
+    {$sort: {createdAt: -1}},
+    {
+      $group:{
+        _id: "$chatId",
+        messages:{
+          $push: "$$ROOT"
+        }
+      }
+    },
+    {
+      $project: {
+        messages: {$slice: ["$messages", 20]}
+      }
+    }
+  ]);
+
   res.status(OK).json(
     new ApiResponse(OK, "Get all chats success", {
-      chats: chatsData,
-      totalChats,
-      hasMore,
-      participants
+      chats,
+      messagesPerChat,
+      participants,
     })
   );
 });
@@ -529,5 +567,12 @@ export const getChatById = asyncHandler(async (req, res, next) => {
     //|| groupChat.chatType !== "group" -> initially i was getGroupChatById so i changed to getChatById
     return next(new ApiError(NOT_FOUND, "Chat not found"));
   }
-  res.status(OK).json(new ApiResponse(OK, "Get group chat success", {chatData: chat, participants}));
-})
+  res
+    .status(OK)
+    .json(
+      new ApiResponse(OK, "Get group chat success", {
+        chatData: chat,
+        participants,
+      })
+    );
+});

@@ -1,3 +1,4 @@
+import { onMessage } from 'firebase/messaging';
 import React, { Suspense, useEffect } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import './App.css';
@@ -7,13 +8,12 @@ import SideNavigation from './components/SideNavigation';
 import TopLoader from './components/TopLoader';
 import VerificationRoute from './components/VerificationRoute';
 import { useAppSelector } from './hooks/hooks';
+import { useGlobalSocketListeners } from './hooks/useGlobalSocketListeners';
+import { useAuthActions } from './hooks/userHooks';
+import { messaging } from './notifications/firebase';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import { useAuthActions } from './hooks/userHooks';
-import { onMessage } from 'firebase/messaging';
-import { messaging } from './notifications/firebase';
-import { useGlobalSocketListeners } from './hooks/useGlobalSocketListeners';
 
 const Profile = React.lazy(() => import('./pages/Profile'));
 const Notifications = React.lazy(() => import('./pages/Notifications'));

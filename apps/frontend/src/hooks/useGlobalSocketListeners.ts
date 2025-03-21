@@ -1,5 +1,5 @@
 import { useSocket } from "@/context/socketContext"
-import type { ChatMap, IChat, IGetSingleChatResponse, Participants, ParticipantsMap } from "@/interface/chatInterface";
+import type { ChatMap, DeliveryStatus, IChat, IGetSingleChatResponse, IMessage, Participants, ParticipantsMap } from "@/interface/chatInterface";
 import { IUser, ResponseWithData } from "@/interface/interface";
 import { SOCKET_EVENTS } from "@/utils/constants";
 import { useEffect } from "react";
@@ -9,6 +9,7 @@ import { addToNewMessages, addToSeenMessages, transferNewToSeen, updateMessageSt
 import { useChatDetailsUpdates } from "./chatDetailsHooks";
 import instance from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
+import { addToChatState } from "@/redux/slices/chats";
 
 export const useGlobalSocketListeners = (
   selectedChat: IChat|null, 
@@ -51,29 +52,41 @@ export const useGlobalSocketListeners = (
       }
     }
   }
+  const emitStatusUpdate = (message: IMessage, status: DeliveryStatus, roomId: string) => {
+    if(socket){
+      socket.emit(SOCKET_EVENTS.MESSAGE_STATUS_UPDATE, [{
+        messageId: message._id,
+        status,
+        roomId,
+        senderId:message.senderId
+      }]);
+    }
+  }
 
   useEffect(() => {
     if (!socket) return;
-    socket.on(SOCKET_EVENTS.NEW_MESSAGE, (payload) => {
+    socket.on(SOCKET_EVENTS.NEW_MESSAGE, async(payload) => {
       const { message, roomId } = payload;
-      if (!selectedChat || roomId !== selectedChat._id) {
+      if(!chatMap[roomId]){
+        console.log("*************getting chat on new message")
+        const createdChat = await getChatById(roomId);
+        if(createdChat){
+          dispatch(addToChatState({chats: [createdChat.chatData], participants:createdChat.participants}));
+          dispatch(addToNewMessages({chatId: roomId, message}));
+          console.log("inside");
+          emitStatusUpdate(message, "delivered", roomId);
+        }
+      }
+      else if (!selectedChat || roomId !== selectedChat._id) {
+        console.log("******************chat is present")
         toast.success("New message received");
         dispatch(addToNewMessages({ chatId: roomId, message }));
-        socket.emit(SOCKET_EVENTS.MESSAGE_STATUS_UPDATE, [{
-          messageId: message._id,
-          status:"delivered",
-          roomId,
-          senderId: message.senderId
-        }]);
+        emitStatusUpdate(message, "delivered", roomId);
       } else {
+        console.log("***************chat is selected")
         dispatch(transferNewToSeen(roomId));
         dispatch(addToSeenMessages({ chatId: roomId, message }));
-        socket.emit(SOCKET_EVENTS.MESSAGE_STATUS_UPDATE, [{
-          messageId: message._id,
-          status:"seen",
-          roomId,
-          senderId: message.senderId
-        }]);
+        emitStatusUpdate(message, "seen", roomId);
       }
     });
 
@@ -149,6 +162,6 @@ export const useGlobalSocketListeners = (
       socket.off(SOCKET_EVENTS.LEAVE_GROUP);
       socket.off(SOCKET_EVENTS.CREATE_OR_ADD_PARTICIPANTS);
     }
-  }, [socket, selectedChat, dispatch]);
+  }, [socket, selectedChat, dispatch, chatMap]);
 
 }

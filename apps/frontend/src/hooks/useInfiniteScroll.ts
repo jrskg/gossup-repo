@@ -19,7 +19,7 @@ export const useInfiniteScroll = ({
 }: InfiniteScrollOptions) => {
   const observer = useRef<IntersectionObserver | null>(null);
   const [lastElement, setLastElement] = useState<HTMLElement | null>(null);
-
+  
   const observe = useCallback(
     (node: HTMLElement | null) => {
       if (isLoading) return;

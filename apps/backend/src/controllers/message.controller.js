@@ -14,11 +14,11 @@ import {
 import {v2 as cloudinary} from "cloudinary";
 import { CLN_API_KEY, CLN_API_SECRET, CLN_CLOUD_NAME } from "../configs/env.index.js";
 
-export const getAllMessagesOfChat = asyncHandler(async (req, res, next) => {
+export const getMessagesOfChat = asyncHandler(async (req, res, next) => {
   let { chatId, page } = req.query;
   page = isNaN(page) ? 1 : Number(page);
   if (page < 1) page = 1;
-  const limit = 100;
+  const limit = 20;
 
   if (!chatId || !isValidObjectId(chatId)) {
     return next(new ApiError(BAD_REQUEST, "Invalid chat id"));
@@ -28,7 +28,7 @@ export const getAllMessagesOfChat = asyncHandler(async (req, res, next) => {
   if (!chat) {
     return next(new ApiError(NOT_FOUND, "Chat not found"));
   }
-  if (!chat.participants.includes(req.user._id.toString())) {
+  if (!chat.participants.some(p => p.toString() === req.user._id.toString())) {
     return next(
       new ApiError(UNAUTHORIZED, "You are not a participant of this chat")
     );

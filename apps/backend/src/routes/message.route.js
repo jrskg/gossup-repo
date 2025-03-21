@@ -1,6 +1,6 @@
 import express from "express";
 import { authenticate } from "../middlewares/auth.middleware.js";
-import { getUploadSignature, uploadAttachments } from "../controllers/message.controller.js";
+import { getMessagesOfChat, getUploadSignature, uploadAttachments } from "../controllers/message.controller.js";
 import { attachmentsUploadMulter } from "../middlewares/multer.middleware.js";
 import { MAX_ATTACHMENT_COUNT } from "../configs/env.index.js";
 
@@ -16,5 +16,6 @@ router
   );
 
 router.route("/get-signature").get(authenticate, getUploadSignature);
+router.route("/all").get(authenticate, getMessagesOfChat);
 
 export default router;

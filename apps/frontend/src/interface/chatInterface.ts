@@ -55,12 +55,16 @@ export type Participants = IUserShortWithBio[];
 export type ParticipantsMap = Record<string, IUserShortWithBio>;
 export type ChatMap = Record<string, IChat>;
 
-export interface IGetChatsResponse{
-  hasMore: boolean;
-  totalChats: number;
-  chats: IChat[];
-  participants: Participants
+export interface MessagesPerChat{
+  _id: string; //chatId
+  messages: IMessage[]
 }
+export interface IGetChatsResponse{
+  chats: IChat[];
+  participants: Participants;
+  messagesPerChat: MessagesPerChat[]
+}
+
 export interface IGetSingleChatResponse{
   chatData: IChat;
   participants: Participants
