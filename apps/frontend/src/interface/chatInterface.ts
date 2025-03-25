@@ -21,10 +21,12 @@ export interface IMessage{
   attachments: IAttachment[];
   createdAt: string;
 }
-export interface ILastMessage{
-  messageType: MessageType;
-  content: string;
-}
+// export interface ILastMessage{
+//   messageType: MessageType;
+//   content: string;
+//   senderId: string;
+//   deliveryStatus: DeliveryStatus;
+// }
 interface IUserShortWithBio extends IUserShort{
   bio:string
 }
@@ -33,7 +35,7 @@ interface BaseChat {
   chatType: ChatType;
   participants: string[];
   admins: string[];
-  lastMessage?: ILastMessage;
+  lastMessageId?: string;
   createdAt: string;
   updatedAt: string;
 }

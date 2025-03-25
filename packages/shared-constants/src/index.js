@@ -50,3 +50,7 @@ export const SOCKET_EVENTS_SERVER = {
   USER_JOINED: "user_joined",
   USER_LEFT: "user_left",
 };
+
+export const STORY_TYPES = ['text', 'image', 'video', 'audio'];
+export const STORY_VISIBILITY = ['all', 'only', 'except'];
+export const EMOJI_TYPE = ["like", "love", "haha", "wow", "sad", "angry", "care"];

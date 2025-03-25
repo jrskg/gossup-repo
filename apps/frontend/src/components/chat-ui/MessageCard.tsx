@@ -13,8 +13,9 @@ import {
   getNameStyle,
   getTriangleStyle
 } from '@/utils/utility';
-import { CheckCheckIcon, CheckIcon, DownloadIcon } from 'lucide-react';
+import { DownloadIcon } from 'lucide-react';
 import React, { memo } from 'react';
+import MessageTick from '../MessageTick';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 interface MessageCardProps {
@@ -159,16 +160,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
             >
               <p className='text-[13px]'>{time}</p>
               {senderId === loggedInUserId &&
-                (() => {
-                  switch (deliveryStatus) {
-                    case "sent":
-                      return <CheckIcon className='w-5 h-5 text-[#2b2b2b] dark:text-[#d1d1d1]' />
-                    case "delivered":
-                      return <CheckCheckIcon className='w-5 h-5 text-[#2b2b2b] dark:text-[#d1d1d1]' />
-                    case "seen":
-                      return <CheckCheckIcon className='w-5 h-5 text-[#ffea31] dark:text-[#18beff]' />
-                  }
-                })()
+                <MessageTick deliveryStatus={deliveryStatus} />
               }
             </div>
           </div>

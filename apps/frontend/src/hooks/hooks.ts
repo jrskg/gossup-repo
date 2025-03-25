@@ -1,12 +1,12 @@
 import type { ImageResponse, PushToken, ResponseWithoutData, Theme } from "@/interface/interface";
 import { setJustUser } from "@/redux/slices/user";
 import instance from "@/utils/axiosInstance";
+import { toggleDarkMode } from "@/utils/utility";
 import { AxiosError } from "axios";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import type { AppDispatch, RootState } from "../redux/store";
-import { toggleDarkMode } from "@/utils/utility";
 
 export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
 export const useAppSelector = useSelector.withTypes<RootState>();

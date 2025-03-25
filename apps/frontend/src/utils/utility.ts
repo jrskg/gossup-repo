@@ -15,7 +15,7 @@
 
 // export { checkConnection }
 
-import type { ChatType, FileType, ILastMessage } from '@/interface/chatInterface';
+import type { ChatType, FileType } from '@/interface/chatInterface';
 import { format, isAfter, isSameDay, isSameYear, subDays } from 'date-fns';
 
 const toggleDarkMode = (setDarkMode: boolean) => {
@@ -63,7 +63,7 @@ const getMessageTimestamp = (date?: Date): { time: string, date?: string } => {
     // return format(date, 'EEE, p'); // "Wed, 2:15 PM"
     return {
       time: format(date, 'p'),
-      date: format(date, 'EEE')
+      date: format(date, 'EEEE')
     }
   }
   if (isSameYear(date, now)) {
@@ -136,12 +136,6 @@ const getDateStyle = (sId: string, lguId: string, chType: ChatType): string => {
   return "";
 }
 
-const getLastMessageText = (lastMessage?: ILastMessage): string => {
-  if (!lastMessage) return "";
-  if (lastMessage.messageType === "text") return lastMessage.content;
-  return "Sent an attachment";
-}
-
 const getMapFromArray = <T extends {_id: string}, U extends Record<string, T>>(arr: T[]): 
 {map:U, orderedIds:string[]} => {
   const map:Record<string, T> = {};
@@ -181,13 +175,9 @@ const getFileExtension = (fileName: string): string | null => {
 };
 
 export {
-  getFileExtension,
-  generateFileId,
-  getFileType,
-  getAvatarStyle,
+  generateFileId, getAvatarStyle,
   getDateStr,
-  getDateStyle,
-  getLastMessageText,
+  getDateStyle, getFileExtension, getFileType,
   getMainConatainerStyle,
   getMapFromArray,
   getMessageBoxStyle,

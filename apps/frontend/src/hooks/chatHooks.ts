@@ -1,8 +1,10 @@
+import { LastMessageRenderData } from "@/components/chat-ui/ChatCard";
 import { ChatsContext } from "@/context/contexts";
 import { useSelectedChatRef } from "@/context/selectedChatRefContext";
 import { useSocket } from "@/context/socketContext";
-import type { IChat, IGetChatsResponse, IGetSingleChatResponse, MessagesPerChat, Participants, ParticipantsMap } from "@/interface/chatInterface";
+import type { IChat, IGetChatsResponse, IGetSingleChatResponse, IMessage, MessagesPerChat, Participants, ParticipantsMap } from "@/interface/chatInterface";
 import type { Image, ResponseWithData, ResponseWithoutData } from "@/interface/interface";
+import { IMessageStatusUpdatePayload } from "@/interface/socketEvents";
 import { setChatState } from "@/redux/slices/chats";
 import { initilizeMessagesTemp, Messages, setMessages, transferNewToSeen } from "@/redux/slices/messages";
 import { setSelectedChat } from "@/redux/slices/selectedChat";
@@ -13,7 +15,6 @@ import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import defaultAvatar from "../assets/defaultAvatar.jpg";
 import { useAppDispatch } from "./hooks";
-import { IMessageStatusUpdatePayload } from "@/interface/socketEvents";
 
 type ChatReturn = {
   chat: IChat,
@@ -162,12 +163,30 @@ const useGetParticipantsInfo = (participants: ParticipantsMap, userId: string) =
     const pId = chat.participants.find(p => p !== userId)!;
     return participants[pId].bio
   }
+  const getLastMessageText = (chat: IChat, lastMessage?: IMessage): LastMessageRenderData|null => {
+    if (!lastMessage) return null;
+    if(chat.chatType === "group"){
+      let str1 = lastMessage.senderId === userId ? "You: " : `${participants[lastMessage.senderId].name}: `
+      let textContent = lastMessage.messageType === "text" ? str1 + lastMessage.content?.slice(0, 20) : str1 + "Sent an attachment";
+      return{
+        message: textContent,
+        shouldIcon: false,
+        status: lastMessage.deliveryStatus
+      }
+    }
+    return {
+      message: lastMessage.messageType === "text" ? lastMessage.content?.slice(0, 20) || "" : "Sent an attachment",
+      shouldIcon: lastMessage.senderId === userId,
+      status: lastMessage.deliveryStatus
+    }
+  }
 
   return {
     getChatAvatar,
     getChatName,
     getChatProfile,
-    getUserBio
+    getUserBio,
+    getLastMessageText
   }
 }
 

@@ -480,33 +480,6 @@ export const getAllChats = asyncHandler(async (req, res, next) => {
       },
     },
     { $sort: { updatedAt: -1 } },
-    {
-      $lookup: {
-        from: "messages",
-        localField: "lastMessageId",
-        foreignField: "_id",
-        as: "lastMessage",
-        pipeline: [
-          {
-            $project: {
-              messageType: 1,
-              content: 1,
-            },
-          },
-        ],
-      },
-    },
-    {
-      $unwind: {
-        path: "$lastMessage",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $project: {
-        lastMessageId: 0,
-      },
-    },
   ]);
 
   const allUniqueParticipantsIds = new Set();

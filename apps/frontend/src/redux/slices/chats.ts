@@ -23,7 +23,7 @@ const initialState: IChatState = {
 const updateChatOrder = (state: IChatState, chatId: string, message: IMessage) => {
   const chat = state.chatMap[chatId];
   if(chat){
-    chat.lastMessage = {content: message.content || "", messageType: message.messageType};
+    chat.lastMessageId = message._id;
     chat.updatedAt = message.createdAt;
 
     const idx = state.orderedChatIds.findIndex(_id => _id === chatId);

@@ -2,7 +2,7 @@ import { ChatsContext, LoggedInUserContext, MessagesContext, ParticipantsContext
 import { useGetAllChats, useGetParticipantsInfo, useSetSelectedChat } from '@/hooks/chatHooks';
 import { IChat } from '@/interface/chatInterface';
 import { cn } from '@/lib/utils';
-import { getLastMessageText, getMessageTimestamp } from '@/utils/utility';
+import { getMessageTimestamp } from '@/utils/utility';
 import { EllipsisVerticalIcon, PlusIcon } from 'lucide-react';
 import React, { memo, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import MyTab from '../MyTab';
@@ -38,7 +38,11 @@ const ChatList: React.FC<ChatListProps> = ({
   const participants = useContext(ParticipantsContext)!;
   const selectedChat = useContext(SelectedChatContext);
   const [selectedTab, setSelectedTab] = useState("all");
-  const { getChatAvatar, getChatName } = useGetParticipantsInfo(participants, userId);
+  const {
+    getChatAvatar,
+    getChatName,
+    getLastMessageText
+  } = useGetParticipantsInfo(participants, userId);
   const handleSelectedChat = useSetSelectedChat();
 
   const handleChatClick = useCallback((sc: IChat) => {
@@ -126,12 +130,13 @@ const ChatList: React.FC<ChatListProps> = ({
                   }
                   return orderedChatIds.map((chid) => {
                     const ch = chatMap[chid];
+                    const lastMessage = ch.lastMessageId ? messages[ch._id].seenMessages[ch.lastMessageId] : undefined;
                     return <ChatCard
                       key={ch._id}
                       avatar={getChatAvatar(ch)}
                       chatName={getChatName(ch)}
-                      lastMessage={getLastMessageText(ch.lastMessage)}
-                      lastMessageTime={ch.lastMessage && getMessageTimestamp(new Date(ch.updatedAt)).time}
+                      lastMessageRenderData={getLastMessageText(ch, lastMessage)}
+                      lastMessageTime={lastMessage && getMessageTimestamp(new Date(ch.updatedAt)).time}
                       chat={ch}
                       onChatClick={handleChatClick}
                       isChatSelected={ch._id === selectedChat?._id}
@@ -148,17 +153,20 @@ const ChatList: React.FC<ChatListProps> = ({
                       > <PlusIcon />Create Group Chat</Button>
                     </InfoWrapper>
                   }
-                  return groupChats.map(ch => <ChatCard
-                    key={ch._id}
-                    avatar={getChatAvatar(ch)}
-                    chatName={getChatName(ch)}
-                    lastMessage={getLastMessageText(ch.lastMessage)}
-                    lastMessageTime={ch.lastMessage && getMessageTimestamp(new Date(ch.updatedAt)).time}
-                    chat={ch}
-                    onChatClick={handleChatClick}
-                    isChatSelected={ch._id === selectedChat?._id}
-                    newMessageCount={messages[ch._id].newMessagesIds.length}
-                  />)
+                  return groupChats.map(ch => {
+                    const lastMessage = ch.lastMessageId ? messages[ch._id].seenMessages[ch.lastMessageId] : undefined;
+                    return <ChatCard
+                      key={ch._id}
+                      avatar={getChatAvatar(ch)}
+                      chatName={getChatName(ch)}
+                      lastMessageRenderData={getLastMessageText(ch, lastMessage)}
+                      lastMessageTime={lastMessage && getMessageTimestamp(new Date(ch.updatedAt)).time}
+                      chat={ch}
+                      onChatClick={handleChatClick}
+                      isChatSelected={ch._id === selectedChat?._id}
+                      newMessageCount={messages[ch._id].newMessagesIds.length}
+                    />
+                  })
                 default:
                   return <InfoWrapper>
                     <p className='text-2xl'>Something Went Wrong!</p>

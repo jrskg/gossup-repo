@@ -1,12 +1,19 @@
-import { IChat } from '@/interface/chatInterface'
-import { cn } from '@/lib/utils'
-import React, { memo } from 'react'
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+import { DeliveryStatus, IChat } from '@/interface/chatInterface';
+import { cn } from '@/lib/utils';
+import React, { memo } from 'react';
+import MessageTick from '../MessageTick';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+
+export interface LastMessageRenderData {
+  shouldIcon: boolean;
+  message: string;
+  status: DeliveryStatus
+}
 
 interface ChatCardProps {
   avatar: string
   chatName: string
-  lastMessage?: string
+  lastMessageRenderData: LastMessageRenderData | null;
   lastMessageTime?: string
   chat: IChat
   onChatClick: (chat: IChat) => void
@@ -16,8 +23,8 @@ interface ChatCardProps {
 const ChatCard: React.FC<ChatCardProps> = ({
   avatar,
   chatName,
-  lastMessage,
   lastMessageTime,
+  lastMessageRenderData,
   chat,
   onChatClick,
   isChatSelected = false,
@@ -35,7 +42,17 @@ const ChatCard: React.FC<ChatCardProps> = ({
         </Avatar>
         <div>
           <p className='text-lg font-bold'>{chatName}</p>
-          {newMessageCount > 0 ? <p className='text-sm text-green-800 dark:text-success font-bold'>{newMessageCount} New Messages</p> : lastMessage && <p className='text-sm'>{lastMessage}</p>}
+          {newMessageCount > 0 ? <p className='text-sm text-green-800 dark:text-success font-bold'>{newMessageCount} New Messages</p> : lastMessageRenderData &&
+            <div>
+              {lastMessageRenderData.shouldIcon ?
+                <div className='flex items-center gap-2'>
+                  <MessageTick deliveryStatus={lastMessageRenderData.status} />
+                  <p className='text-sm'>{lastMessageRenderData.message}</p>
+                </div> :
+                <p className='text-sm'>{lastMessageRenderData.message}</p>
+              }
+            </div>
+          }
         </div>
       </div>
       <div>
