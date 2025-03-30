@@ -1,5 +1,5 @@
 import { useAuthActions } from "@/hooks/userHooks";
-import { BellIcon, CircleUserIcon, LogOutIcon, MessageSquareIcon, UsersIcon } from "lucide-react";
+import { BellIcon, CircleDashed, CircleUserIcon, LogOutIcon, MessageSquareIcon, UsersIcon } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavigationTab from "./NavigationTab";
@@ -24,10 +24,16 @@ const SideNavigation: React.FC = () => {
       <p className="hidden md:block font-bold text-primary-1">GOSS_UP</p>
       <div className="flex justify-around w-full items-center md:flex-col md:w-[unset]">
         <NavigationTab
-          label="All Chats"
+          label="Chats"
           icon={<MessageSquareIcon className={getColor("/")} size={25} />}
           isActive={tab === "/"}
           onClick={() => handleNavigation("/")}
+        />
+        <NavigationTab
+          label="Stories"
+          icon={<CircleDashed className={getColor("/stories")} size={25} />}
+          isActive={tab === "/stories"}
+          onClick={() => handleNavigation("/stories")}
         />
         <NavigationTab
           label="Friends"

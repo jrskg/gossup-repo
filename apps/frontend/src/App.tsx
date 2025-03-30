@@ -26,6 +26,7 @@ const ForgetPassword = React.lazy(() => import('./pages/ForgetPassword'));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
 const SearchUser = React.lazy(() => import('./pages/SearchUser'));
 const UserProfile = React.lazy(() => import('./pages/UserProfile'));
+const StoryPage = React.lazy(() => import('./pages/StoryPage'));
 
 function App() {
   const { isAuthenticated, user } = useAppSelector(state => state.user);
@@ -57,6 +58,7 @@ function App() {
         <Route path="/login" element={<Login auhtLoading={loading} />} />
         <Route path="/signup" element={<Signup />} />
         <Route path='/forget-password' element={<Suspense fallback={<TopLoader />}><ForgetPassword /></Suspense>} />
+
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Home
             user={user} 
@@ -72,12 +74,15 @@ function App() {
           <Route path="/friends" element={<Suspense fallback={<TopLoader />}><Friends /></Suspense>} />
           <Route path="/search" element={<Suspense fallback={<TopLoader />}><SearchUser /></Suspense>} />
           <Route path="/user/:userId" element={<Suspense fallback={<TopLoader />}><UserProfile /></Suspense>} />
+          <Route path="/stories" element={<Suspense fallback={<TopLoader />}><StoryPage /></Suspense>} />
         </Route>
+
         <Route element={<VerificationRoute />}>
           <Route path='/operation-info/:type' element={<Suspense fallback={<TopLoader />}><OperationInfo /></Suspense>} />
           <Route path='/verify/:veriticationToken' element={<Suspense fallback={<TopLoader />}><Verification /></Suspense>} />
           <Route path='/password/reset/:resetToken' element={<Suspense fallback={<TopLoader />}><ResetPassword /></Suspense>} />
         </Route>
+
         <Route element={<InitialStepperRoute />}>
           <Route path='/initial-stepper' element={<Suspense fallback={<TopLoader />}><InitialStepper /></Suspense>} />
         </Route>

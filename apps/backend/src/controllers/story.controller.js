@@ -2,6 +2,7 @@ import { Friendship, Story, StoryView } from "@gossup/db-models";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   BAD_REQUEST,
+  CREATED,
   EMOJI_TYPE,
   INTERNAL_SERVER_ERROR,
   NOT_FOUND,
@@ -21,8 +22,11 @@ export const createStory = asyncHandler(async (req, res, next) => {
   if (!type || !STORY_TYPES.includes(type)) {
     return next(new ApiError(BAD_REQUEST, "Invalid story types"));
   }
-  if (type.trim() === "text" && (!content.text || !content.backgroundColor)) {
+  if (type.trim() === "text" && (!content.text || !content.backgroundColor || !content.textColor || !content.textFont)) {
     return next(new ApiError(BAD_REQUEST, "Invalid data for text status"));
+  }
+  if(!content.duration) {
+    return next(new ApiError(BAD_REQUEST, "Invalid duration"));
   }
   if (type.trim() !== "text" && !content.mediaUrl) {
     return next(new ApiError(BAD_REQUEST, "Invalid data for media status"));
@@ -48,11 +52,11 @@ export const createStory = asyncHandler(async (req, res, next) => {
     );
   }
 
-  res.status(OK).json(new ApiResponse(OK, "Story created successfully", story));
+  res.status(CREATED).json(new ApiResponse(CREATED, "Story created successfully", story));
 });
 
 export const getFriendsStory = asyncHandler(async (req, res, next) => {
-  const userId = req.user._id;
+  const userId = req.user._id; //ObjectId
 
   let page = Number(req.query?.page);
   if (isNaN(page) || page < 1) page = 1;
@@ -60,8 +64,8 @@ export const getFriendsStory = asyncHandler(async (req, res, next) => {
 
   const query = {
     $or: [
-      { userOneId: new mongoose.Types.ObjectId(userId) },
-      { userTwoId: new mongoose.Types.ObjectId(userId) },
+      { userOneId: userId },
+      { userTwoId: userId },
     ],
     status: "accepted",
   };
@@ -83,8 +87,8 @@ export const getFriendsStory = asyncHandler(async (req, res, next) => {
   }
 
   const friendsId = friends.map((f) =>
-    f.userOneId === userId ? f.userTwoId : f.userOneId
-  );
+    f.userOneId.toString() === userId.toString() ? f.userTwoId : f.userOneId
+  ); //ObjectId[]
 
   const pipeline = [
     {
@@ -113,7 +117,7 @@ export const getFriendsStory = asyncHandler(async (req, res, next) => {
               $expr: {
                 $and: [
                   { $eq: ["$storyId", "$$storyId"] },
-                  { $eq: ["$viewedBy", new mongoose.Types.ObjectId(userId)] },
+                  { $eq: ["$viewedBy", userId] },
                 ],
               },
             },

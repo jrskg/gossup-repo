@@ -15,9 +15,14 @@ const storySchema = new mongoose.Schema({
   content: {
     caption: String,
     text: String,
+    textColor: String,
+    textFont: String,
     backgroundColor: String,
     mediaUrl: String,
-    // duration: Number
+    duration: {
+      type: Number,
+      required: true
+    }
   },
   visibility: {
     type: String,

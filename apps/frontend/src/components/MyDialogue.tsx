@@ -40,7 +40,7 @@ const MyDialog: React.FC<MyDialogProps> = ({
   }
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px] bg-[#eeeeee] dark:bg-dark-1" >
+      <DialogContent className="sm:max-w-[425px] bg-[#eeeeee] dark:bg-dark-1">
         <DialogHeader>
           <DialogTitle>{header}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
