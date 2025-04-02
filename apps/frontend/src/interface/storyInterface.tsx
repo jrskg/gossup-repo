@@ -1,5 +1,6 @@
 export type StoryType = 'text' | 'image' | 'video' | 'audio';
 export type VisibilityType = 'all' | 'only' | 'except';
+export type ReactionType = 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry' | 'care';
 export interface Story {
   _id: string;
   userId: string;
@@ -12,7 +13,7 @@ export interface Story {
   createdAt: string;
   updatedAt: string;
   hasViewed: boolean;
-  reactions: string[][];
+  reactions: ReactionType[][];
 }
 
 export interface TextContent {

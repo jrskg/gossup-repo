@@ -1,5 +1,6 @@
 import { Story } from "@/interface/storyInterface";
-import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "../ui/dialog";
 import StoryContent from "./StoryContent";
@@ -23,9 +24,9 @@ const StoriesModal: React.FC<Props> = ({ stories, isOpen, setIsOpen, onNextFrien
   const startTime = useRef<number>(0);
   const rafId = useRef<number>();
 
-  useEffect(() => {
-    if(isOpen) setIsPaused(false);
-  }, [isOpen]);
+  // useEffect(() => {
+  //   if(isOpen) setIsPaused(false);
+  // }, [isOpen]);
 
   useEffect(() => {
     if (!currentStory || isPaused) return;
@@ -75,24 +76,40 @@ const StoriesModal: React.FC<Props> = ({ stories, isOpen, setIsOpen, onNextFrien
       setProgress(0);
     } else {
       if (onNextFriend && typeof onNextFriend === "function") onNextFriend(globalIndex);
-      else setIsOpen(false);
+      else handleClose();
     }
   };
 
   function handlePrev() {
+    startTime.current = 0;
+    pausedDuration.current = 0;
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
       setProgress(0);
     }
   };
 
+  function handleClose() {
+    setIsOpen(false);
+    setCurrentIndex(0);
+    setProgress(0);
+    setIsPaused(true);
+    pausedTime.current = 0;
+    pausedDuration.current = 0;
+    startTime.current = 0;
+  }
+
   return (
     <Dialog
       open={isOpen}
-      onOpenChange={setIsOpen}
+      onOpenChange={handleClose}
     >
-      <DialogContent className="bg-blue-500 border-none w-[60%]">
-        <div className="relative bg-black/90 backdrop-blur-sm transition-opacity z-50">
+      <DialogContent className="p-0 border-none max-w-xl w-full top-[45%]">
+        <VisuallyHidden>
+          <DialogTitle>Stories</DialogTitle>
+          <DialogDescription>Stories Description</DialogDescription>
+        </VisuallyHidden>
+        <div className="relative bg-black/90 backdrop-blur-sm transition-opacity z-50 rounded-sm">
           <div className="absolute top-4 left-4 right-4 flex gap-1 z-50">
             {stories.map((story, index) => (
               <div
@@ -114,41 +131,19 @@ const StoriesModal: React.FC<Props> = ({ stories, isOpen, setIsOpen, onNextFrien
             ))}
           </div>
 
-          <div className="relative min-h-[600px] w-full h-full">
+          <div className="relative min-h-[700px] md:max-h-[700px] w-full h-[90vh] md:h-full">
             <StoryContent story={currentStory} isPaused={isPaused} />
           </div>
 
-          <div className="absolute inset-0 flex justify-between items-center z-50">
-            <button
-              onClick={handlePrev}
-              className="h-full w-1/3 flex items-center justify-start pl-4 opacity-0 hover:opacity-100 transition-opacity"
-            >
-              <div className="p-2 rounded-full bg-white/10 backdrop-blur-sm">
-                <ChevronLeft className="h-8 w-8 text-white/80" />
-              </div>
-            </button>
-
-            <button
-              onClick={handleNext}
-              className="h-full w-1/3 flex items-center justify-end pr-4 opacity-0 hover:opacity-100 transition-opacity"
-            >
-              <div className="p-2 rounded-full bg-white/10 backdrop-blur-sm">
-                <ChevronRight className="h-8 w-8 text-white/80" />
-              </div>
-            </button>
-          </div>
-
-          <div className="absolute bottom-4 left-4 z-50">
-            <button
-              onClick={handlePlayPause}
-              className="p-2 rounded-full bg-white/10 backdrop-blur-sm text-white/80 hover:text-white transition-colors"
-            >
-              {isPaused ? (
-                <Play className="h-6 w-6" />
-              ) : (
-                <Pause className="h-6 w-6" />
-              )}
-            </button>
+          <div className="absolute w-full h-[65%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-[30%_40%_30%]">
+            <p onClick={handlePrev}/>
+            <p 
+              onMouseDown={handlePlayPause}
+              onMouseUp={handlePlayPause}
+              onTouchStart={handlePlayPause}
+              onTouchEnd={handlePlayPause}
+            />
+            <p onClick={handleNext}/>
           </div>
         </div>
       </DialogContent>

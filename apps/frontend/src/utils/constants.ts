@@ -1,3 +1,5 @@
+import { ReactionType } from "@/interface/storyInterface";
+
 export const CONNECTION_ERROR: string = "connection_error";
 
 export const RESET: string = "reset";
@@ -41,3 +43,13 @@ export const SOCKET_EVENTS = {
   USER_JOINED: "user_joined",
   USER_LEFT: "user_left",
 } as const;
+
+export const EMOJI_MAPPING: Record<ReactionType, string> = {
+  like: "👍",
+  love: "❤️",
+  wow: "😯",
+  sad: "😥",
+  angry: "😡",
+  care: "🤗",
+  haha: "😂",
+};

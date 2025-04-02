@@ -22,11 +22,11 @@ const stories: Story[] = [
     userId: "67d164e1b145303ffabd27b8",
     type: "text",
     content: {
-      text: "This is my story new",
+      text: "This is my new story, with a long text and a great background.This feels quite complicated and homogenized, but it's actually a very simple and simple text.",
       textColor: "#fff",
-      textFont: "ubuntu",
-      backgroundColor: "#ff0040",
-      duration: 20
+      textFont: "cursive",
+      backgroundColor: "#ff0789",
+      duration: 10
     },
     visibility: "all",
     allowedUsers: [],
@@ -39,7 +39,8 @@ const stories: Story[] = [
       [
         "love",
         "love",
-        "love"
+        "love",
+        "haha"
       ]
     ]
   },
@@ -48,7 +49,7 @@ const stories: Story[] = [
     userId: "67d164e1b145303ffabd27b8",
     type: "image",
     content: {
-      caption: "I just love this guy",
+      caption: "Hritik Roshan seems to be a great dancer.",
       mediaUrl: "https://i.pinimg.com/736x/70/b1/ec/70b1ec9356a859100debef06b4bb4623.jpg",
       duration: 20
     },
@@ -58,8 +59,83 @@ const stories: Story[] = [
     expireAt: "2025-03-27T10:15:31.557Z",
     createdAt: "2025-03-26T10:15:31.558Z",
     updatedAt: "2025-03-26T10:15:31.558Z",
+    hasViewed: true,
+    reactions: [
+      [
+        "angry",
+        "like",
+        "wow"
+      ]
+    ]
+  },
+  {
+    _id: "67e3d3c325b94908a1451e12",
+    userId: "67d164e1b145303ffabd27b8",
+    type: "audio",
+    content: {
+      caption: "This video is quite good for health",
+      mediaUrl: "https://res.cloudinary.com/dg2jnf6ns/video/upload/v1730704151/chat_assests/nfnclz1k29wdkteqkhhl.mp4",
+      duration: 20
+    },
+    visibility: "all",
+    allowedUsers: [],
+    excludedUsers: [],
+    expireAt: "2025-03-27T10:15:31.557Z",
+    createdAt: "2025-03-26T10:15:31.558Z",
+    updatedAt: "2025-03-26T10:15:31.558Z",
     hasViewed: false,
-    reactions: []
+    reactions: [
+      [
+        "love",
+        "sad",
+        "sad",
+        "sad"
+      ]
+    ]
+  },
+  {
+    _id: "67e3d3c325b94908a1451e098",
+    userId: "67d164e1b145303ffabd27b8",
+    type: "video",
+    content: {
+      caption: "I just love this guy a big caption haha nice to have you",
+      mediaUrl: "https://res.cloudinary.com/dg2jnf6ns/video/upload/v1730704160/chat_assests/sxik9ctag3bdfzu6izo5.mp4",
+      duration: 20
+    },
+    visibility: "all",
+    allowedUsers: [],
+    excludedUsers: [],
+    expireAt: "2025-03-27T10:15:31.557Z",
+    createdAt: "2025-03-26T10:15:31.558Z",
+    updatedAt: "2025-03-26T10:15:31.558Z",
+    hasViewed: false,
+    reactions: [
+      ["angry", "care", "like"]
+    ]
+  },
+  {
+    _id: "67e3d3c325b94908a1451e0jh",
+    userId: "67d164e1b145303ffabd27b8",
+    type: "video",
+    content: {
+      caption: "This is my latest video on my tiktok account",
+      mediaUrl: "https://res.cloudinary.com/dg2jnf6ns/video/upload/v1730704154/chat_assests/mwnrbjtz19ixsnyhmxvx.mp4",
+      duration: 20
+    },
+    visibility: "all",
+    allowedUsers: [],
+    excludedUsers: [],
+    expireAt: "2025-03-27T10:15:31.557Z",
+    createdAt: "2025-03-26T10:15:31.558Z",
+    updatedAt: "2025-03-26T10:15:31.558Z",
+    hasViewed: false,
+    reactions: [
+      [
+        "love",
+        "care",
+        "love"
+      ]
+    ]
   }
 ]
 
