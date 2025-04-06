@@ -174,6 +174,29 @@ const getFileExtension = (fileName: string): string | null => {
   return extensionMatch ? extensionMatch[1] : null;
 };
 
+const getMediaDuration = (file: File): Promise<number> => {
+  return new Promise((resolve) => {
+    const fileType = getFileType(file.type);
+    if(fileType !== "video" && fileType !== "audio") {
+      resolve(0);
+    }
+    const mediaElement = document.createElement(fileType === "video" ? "video" : "audio");
+    mediaElement.preload = "metadata";
+
+    mediaElement.onloadedmetadata = () => {
+      const duration = mediaElement.duration;
+      URL.revokeObjectURL(mediaElement.src);
+      resolve(duration);
+    }
+
+    mediaElement.onerror = () => {
+      resolve(0);
+    }
+
+    mediaElement.src = URL.createObjectURL(file);
+  })
+}
+
 export {
   generateFileId, getAvatarStyle,
   getDateStr,
@@ -183,6 +206,7 @@ export {
   getMessageBoxStyle,
   getMessageTimestamp,
   getNameStyle, getTriangleStyle,
-  throttle, toggleDarkMode
+  throttle, toggleDarkMode,
+  getMediaDuration
 };
 

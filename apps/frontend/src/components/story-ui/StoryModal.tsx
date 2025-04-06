@@ -1,18 +1,29 @@
-import { Story } from "@/interface/storyInterface";
+import { FriendStory, MyStory, WhoseStory } from "@/interface/storyInterface";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "../ui/dialog";
-import StoryContent from "./StoryContent";
+import FriendStoryContent from "./FriendStoryContent";
+import MyStoryContent from "./MyStoryContent";
 
-interface Props {
-  stories: Story[];
+interface BaseProps{
   onNextFriend: ((index: number) => void) | null;
   globalIndex: number;
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>
 }
-const StoriesModal: React.FC<Props> = ({ stories, isOpen, setIsOpen, onNextFriend, globalIndex }) => {
+interface ForFriendProps extends BaseProps{
+  whose: WhoseStory.Friend;
+  stories: FriendStory[]
+}
+
+interface ForMineProps extends BaseProps{
+  whose: WhoseStory.Mine;
+  stories: MyStory[]
+}
+
+type Props = ForFriendProps | ForMineProps;
+const StoriesModal: React.FC<Props> = ({ stories, isOpen, setIsOpen, onNextFriend, globalIndex, whose }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -20,13 +31,13 @@ const StoriesModal: React.FC<Props> = ({ stories, isOpen, setIsOpen, onNextFrien
   const currentStory = stories[currentIndex];
 
   const pausedTime = useRef<number>(0);
-  const pausedDuration = useRef<number>(0);
+  const pausedDuration = useRef<number>(0); 
   const startTime = useRef<number>(0);
   const rafId = useRef<number>();
 
-  // useEffect(() => {
-  //   if(isOpen) setIsPaused(false);
-  // }, [isOpen]);
+  useEffect(() => {
+    if(isOpen) setIsPaused(false);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!currentStory || isPaused) return;
@@ -109,8 +120,8 @@ const StoriesModal: React.FC<Props> = ({ stories, isOpen, setIsOpen, onNextFrien
           <DialogTitle>Stories</DialogTitle>
           <DialogDescription>Stories Description</DialogDescription>
         </VisuallyHidden>
-        <div className="relative bg-black/90 backdrop-blur-sm transition-opacity z-50 rounded-sm">
-          <div className="absolute top-4 left-4 right-4 flex gap-1 z-50">
+        <div className="relative bg-black/90 backdrop-blur-sm transition-opacity z-10 rounded-sm">
+          <div className="absolute top-4 left-4 right-4 flex gap-1 z-20">
             {stories.map((story, index) => (
               <div
                 key={story._id}
@@ -132,10 +143,19 @@ const StoriesModal: React.FC<Props> = ({ stories, isOpen, setIsOpen, onNextFrien
           </div>
 
           <div className="relative min-h-[700px] md:max-h-[700px] w-full h-[90vh] md:h-full">
-            <StoryContent story={currentStory} isPaused={isPaused} />
+            {
+              (()=>{
+                switch(whose){
+                  case WhoseStory.Friend:
+                    return <FriendStoryContent story={currentStory as FriendStory} isPaused={isPaused} />
+                  case WhoseStory.Mine:
+                    return <MyStoryContent story={currentStory as MyStory} isPaused={isPaused} />
+                }
+              })()
+            }
           </div>
 
-          <div className="absolute w-full h-[65%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-[30%_40%_30%]">
+          <div className="absolute w-full h-[65%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-[30%_40%_30%] z-10">
             <p onClick={handlePrev}/>
             <p 
               onMouseDown={handlePlayPause}

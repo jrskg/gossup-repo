@@ -1,11 +1,12 @@
 import { StoryCard } from '@/components/story-ui/StoryCard';
 import StoriesModal from '@/components/story-ui/StoryModal';
 import { useAppSelector } from '@/hooks/hooks';
-import { Story } from '@/interface/storyInterface';
+import { FriendStory, MyStory, WhoseStory } from '@/interface/storyInterface';
 import MainLayout from '@/layouts/MainLayout';
 import { Plus } from 'lucide-react';
 import defaultAvatar from "../assets/defaultAvatar.jpg";
 import { useState } from 'react';
+import CreateStoryModal from '@/components/story-ui/CreateStory';
 
 
 const uniqueOrderedFIds = [
@@ -16,7 +17,7 @@ const uniqueOrderedFIds = [
   "670fa3ea9b1992f78f063995",
   "670fa3ea9b1992f78f06399b",
 ]
-const stories: Story[] = [
+const stories: FriendStory[] = [
   {
     _id: "67e3d32425b94908a1451e42",
     userId: "67d164e1b145303ffabd27b8",
@@ -139,7 +140,7 @@ const stories: Story[] = [
   }
 ]
 
-const myStories = [
+const myStories: MyStory[] = [
   {
     _id: "67e3d32425b94908a1451e42",
     userId: "67d7cca24e59c13d6979094d",
@@ -156,12 +157,19 @@ const myStories = [
     excludedUsers: [],
     createdAt: "2025-03-26T10:12:52.328Z",
     updatedAt: "2025-03-26T10:12:52.328Z",
+    expireAt:"dfghjk",
     views: [
       {
-        _id: "67e3dbc3cee670d15cba9417",
-        storyId: "67e3d32425b94908a1451e42",
-        viewedBy: "67d164e1b145303ffabd27b8",
-        __v: 1,
+        _id: "dfghjkkerty",
+        viewedBy: {
+          _id:"fghjk",
+          name:"Random Name",
+          profilePic:{
+            avatar:"https://res.cloudinary.com/dg2jnf6ns/image/upload/c_fit,h_100,q_auto:low,w_100/v1/gossup_profile/66f9266fad32476d34c2ad5b_jx3uph?_a=BAMAGSa40",
+            image:"ghj",
+            publicId:"hj"
+          }
+        },
         createdAt: "2025-03-26T10:49:39.060Z",
         reactions: [
           "love",
@@ -186,12 +194,14 @@ const myStories = [
     excludedUsers: [],
     createdAt: "2025-03-26T10:15:31.558Z",
     updatedAt: "2025-03-26T10:15:31.558Z",
+    expireAt:"fghjk",
     views: []
   }
 ]
 
 const StoryPage = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [myStoryOpen, setMyStoryOpen] = useState(false);
 
   const {participants} = useAppSelector(state => state.chats);
   const { user } = useAppSelector(state => state.user);
@@ -203,22 +213,27 @@ const StoryPage = () => {
         setIsOpen={setIsOpen}
         stories={stories}
         onNextFriend={null}
+        whose={WhoseStory.Friend}
+      />
+
+      <StoriesModal
+        globalIndex={0}
+        isOpen={myStoryOpen}
+        setIsOpen={setMyStoryOpen}
+        stories={myStories}
+        whose={WhoseStory.Mine}
+        onNextFriend={null}
       />
       <section className='md:my-6 p-5 md:p-0 w-full md:w-[80%] lg:w-[60%] m-auto'>
         <h1 className='text-2xl font-bold'>Stories</h1>
         <div className='mt-4 flex gap-4 item-center'>
-          <div className="text-center w-min">
-            <div className="w-32 h-32 rounded-full dark:bg-gray-800 bg-primary-4 flex items-center justify-center cursor-pointer hover:dark:bg-gray-700 hover:bg-primary-3 transition-colors">
-              <Plus className="w-12 h-12" />
-            </div>
-            <p className="mt-2 text-sm">Create Story</p>
-          </div>
+          <CreateStoryModal/>
           <StoryCard
             isMe={true}
             name={user?.name || ""}
             avatar={user?.profilePic?.avatar || ""}
             unseenStories={myStories.length}
-            onView={() => {}}
+            onView={() => setMyStoryOpen(true)}
           />
         </div>
 

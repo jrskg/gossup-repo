@@ -28,7 +28,7 @@ const Reactions: React.FC<Props> = ({
             "shadow-lg bg-white/20 border border-white/10",
             "transition-all duration-200 hover:scale-110 hover:bg-white/30",
             "animate-in slide-in-from-right-8 fade-in",
-            "cursor-pointer active:scale-95"
+            "cursor-pointer active:scale-95 select-none"
           )}
           style={{
             animationDelay: `${i * 50}ms`,
