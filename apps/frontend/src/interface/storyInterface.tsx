@@ -28,17 +28,21 @@ export interface BaseStory {
   userId: string;
   type: StoryType;
   content: TextContent | MediaContent;
-  visibility: VisibilityType;
-  allowedUsers: string[];
-  excludedUsers: string[];
-  expireAt: string;
   createdAt: string;
   updatedAt: string;
+
+  //not needed in frontend
+  // visibility: VisibilityType;
+  // allowedUsers: string[];
+  // excludedUsers: string[];
+  // expireAt: string;
 }
 
 export interface FriendStory extends BaseStory{
+  userId: never;
+  user: IUserShort,
   hasViewed: boolean;
-  reactions: ReactionType[][];
+  reactions: ReactionType[]; //i am not using this but can be used to show my reactions on friends story
 }
 
 export interface StoryView{
@@ -59,4 +63,10 @@ export function isTextStory<T extends BaseStory>(story: T): story is T & { conte
 
 export function isMediaStory<T extends BaseStory>(story: T): story is T & { content: MediaContent } {
   return ['image', 'video', 'audio'].includes(story.type);
+}
+
+export interface FriendStoryResponse{
+  stories: FriendStory[];
+  totalStoryCount: number;
+  hasMore: boolean;
 }

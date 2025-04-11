@@ -22,10 +22,16 @@ export const createStory = asyncHandler(async (req, res, next) => {
   if (!type || !STORY_TYPES.includes(type)) {
     return next(new ApiError(BAD_REQUEST, "Invalid story types"));
   }
-  if (type.trim() === "text" && (!content.text || !content.backgroundColor || !content.textColor || !content.textFont)) {
+  if (
+    type.trim() === "text" &&
+    (!content.text ||
+      !content.backgroundColor ||
+      !content.textColor ||
+      !content.textFont)
+  ) {
     return next(new ApiError(BAD_REQUEST, "Invalid data for text status"));
   }
-  if(!content.duration) {
+  if (!content.duration) {
     return next(new ApiError(BAD_REQUEST, "Invalid duration"));
   }
   if (type.trim() !== "text" && !content.mediaUrl) {
@@ -34,7 +40,7 @@ export const createStory = asyncHandler(async (req, res, next) => {
   if (!STORY_VISIBILITY.includes(visibility)) {
     return next(new ApiError(BAD_REQUEST, "Invalid visibility"));
   }
-  const story = await Story.create({
+  let story = await Story.create({
     userId,
     type: type.trim(),
     content,
@@ -51,8 +57,13 @@ export const createStory = asyncHandler(async (req, res, next) => {
       )
     );
   }
-
-  res.status(CREATED).json(new ApiResponse(CREATED, "Story created successfully", story));
+  story = {
+    ...story._doc,
+    views: [],
+  };
+  res
+    .status(CREATED)
+    .json(new ApiResponse(CREATED, "Story created successfully", story));
 });
 
 export const getFriendsStory = asyncHandler(async (req, res, next) => {
@@ -63,10 +74,7 @@ export const getFriendsStory = asyncHandler(async (req, res, next) => {
   const limit = 20;
 
   const query = {
-    $or: [
-      { userOneId: userId },
-      { userTwoId: userId },
-    ],
+    $or: [{ userOneId: userId }, { userTwoId: userId }],
     status: "accepted",
   };
 
@@ -108,6 +116,24 @@ export const getFriendsStory = asyncHandler(async (req, res, next) => {
       },
     },
     {
+      $lookup:{
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+        pipeline: [
+          {
+            $project: {
+              _id: 1,
+              name: 1,
+              profilePic: 1,
+            },
+          },
+        ],
+      }
+    },
+    {$unwind: "$user"},
+    {
       $lookup: {
         from: "storyviews",
         let: { storyId: "$_id" },
@@ -129,9 +155,22 @@ export const getFriendsStory = asyncHandler(async (req, res, next) => {
     {
       $addFields: {
         hasViewed: { $gt: [{ $size: "$viewedStory" }, 0] },
-        reactions: { $ifNull: ["$viewedStory.reactions", []] },
+        reactions: {
+          $ifNull: [{ $arrayElemAt: ["$viewedStory.reactions", 0] }, []],
+        },
       },
     },
+    {
+      $project: {
+        visibility: 0,
+        allowedUsers: 0,
+        excludedUsers: 0,
+        expireAt: 0,
+        __v: 0,
+        userId: 0,
+      },
+    },
+    { $sort: { createdAt: -1 } },
     { $skip: (page - 1) * limit },
     { $limit: limit },
     { $unset: "viewedStory" },
@@ -147,10 +186,13 @@ export const getFriendsStory = asyncHandler(async (req, res, next) => {
     },
   ]);
 
+  const hasMore = page * limit < result.totalCount[0]?.count || false;
+
   res.status(OK).json(
     new ApiResponse(OK, "Stories fetched", {
       stories: result.stories,
-      totalStoryCounts: result.totalCount[0]?.count || 0,
+      totalStoryCount: result.totalCount[0]?.count || 0,
+      hasMore,
     })
   );
 
@@ -230,6 +272,29 @@ export const getMyStories = asyncHandler(async (req, res, next) => {
               },
             },
           },
+          {
+            $lookup: {
+              from: "users",
+              localField: "viewedBy",
+              foreignField: "_id",
+              as: "viewedBy",
+              pipeline: [
+                {
+                  $project: {
+                    _id: 1,
+                    name: 1,
+                    profilePic: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $unwind: {
+              path: "$viewedBy",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
         ],
         as: "views",
       },
@@ -237,6 +302,9 @@ export const getMyStories = asyncHandler(async (req, res, next) => {
     {
       $project: {
         expireAt: 0,
+        visibility: 0,
+        allowedUsers: 0,
+        excludedUsers: 0,
         __v: 0,
       },
     },
@@ -299,7 +367,11 @@ export const reactOnFriendsStory = asyncHandler(async (req, res, next) => {
     return next(new ApiError(BAD_REQUEST, "Invalid story id"));
   }
 
-  if (!reactions || !Array.isArray(reactions) || reactions.some(r => !EMOJI_TYPE.includes(r))) {
+  if (
+    !reactions ||
+    !Array.isArray(reactions) ||
+    reactions.some((r) => !EMOJI_TYPE.includes(r))
+  ) {
     return next(new ApiError(BAD_REQUEST, "Invalid reaction"));
   }
 

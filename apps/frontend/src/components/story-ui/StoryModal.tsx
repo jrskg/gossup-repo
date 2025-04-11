@@ -7,7 +7,8 @@ import FriendStoryContent from "./FriendStoryContent";
 import MyStoryContent from "./MyStoryContent";
 
 interface BaseProps{
-  onNextFriend: ((index: number) => void) | null;
+  onNextFriend?: ((index: number) => void);
+  onPrevFriend?: ((index: number) => void);
   globalIndex: number;
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>
@@ -23,7 +24,15 @@ interface ForMineProps extends BaseProps{
 }
 
 type Props = ForFriendProps | ForMineProps;
-const StoriesModal: React.FC<Props> = ({ stories, isOpen, setIsOpen, onNextFriend, globalIndex, whose }) => {
+const StoriesModal: React.FC<Props> = ({ 
+  stories, 
+  isOpen, 
+  setIsOpen, 
+  onNextFriend, 
+  globalIndex, 
+  whose,
+  onPrevFriend
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -97,6 +106,8 @@ const StoriesModal: React.FC<Props> = ({ stories, isOpen, setIsOpen, onNextFrien
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
       setProgress(0);
+    }else{
+      if (onPrevFriend && typeof onPrevFriend === "function") onPrevFriend(globalIndex);
     }
   };
 

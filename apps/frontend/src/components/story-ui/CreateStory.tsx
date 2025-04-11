@@ -4,14 +4,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { useAppDispatch } from '@/hooks/hooks';
+import { IUploadSignature, ResponseWithData } from '@/interface/interface';
+import { MyStory } from '@/interface/storyInterface';
 import { cn } from '@/lib/utils';
+import { appendToMyStories } from '@/redux/slices/story';
+import instance from '@/utils/axiosInstance';
 import { getFileType, getMediaDuration } from '@/utils/utility';
+import { DialogDescription } from '@radix-ui/react-dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import axios, { AxiosError } from "axios";
 import { DotIcon, Plus, XIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import MyButton from '../MyButton';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
-import { DialogDescription } from '@radix-ui/react-dialog';
 import AudioAnimation from './AudioAnimation';
 
 type TabType = "text" | "media";
@@ -45,14 +51,18 @@ const CreateStoryModal = () => {
 
   const [text, setText] = useState('');
   const [backgroundColor, setBackgroundColor] = useState('#3e85bb');
-  const [textColor, setTextColor] = useState('#000');
+  const [textColor, setTextColor] = useState('#000000');
   const [selectedFont, setSelectedFont] = useState(fontFamilies[0]);
 
   const [isDragOver, setIsDragOver] = useState(false);
   const [isMediaPaused, setIsMediaPaused] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const dispatch = useAppDispatch();
 
   const generateRandomColor = (): string => {
     const r = Math.floor(Math.random() * 256); // 0-255
@@ -123,7 +133,6 @@ const CreateStoryModal = () => {
     return returnValue;
   }
 
-
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) {
       return;
@@ -162,25 +171,82 @@ const CreateStoryModal = () => {
   }
 
   const handleSubmit = async () => {
-    const formData = new FormData();
-
-    if (type === 'text') {
-      formData.append('type', 'text');
-      formData.append('content', JSON.stringify({
+    setProgress(0);
+    const requestBody = {
+      visibility: "all",
+      allowedUsers: [],
+      excludedUsers: [],
+      type: "text",
+      content: {}
+    };
+    if (type === "text") {
+      if (!text || !text.trim()) {
+        toast.error("Please enter a story text");
+        return;
+      }
+      requestBody.content = {
         text,
-        backgroundColor,
         textColor,
-        font: selectedFont
-      }));
+        textFont: selectedFont,
+        backgroundColor,
+        duration: durationInSec
+      }
     } else {
-      if (!selectedFile) return;
-      formData.append('type', type);
-      formData.append('file', selectedFile);
-      formData.append('caption', caption);
-    }
+      if (!selectedFile) {
+        toast.error("Please select a file");
+        return;
+      }
+      requestBody.type = selectedFileType!;
+      try {
+        setLoading(true);
+        const STORY_FOLDER_NAME = "storyMedia";
+        const {data} = await instance.post<ResponseWithData<IUploadSignature>>("/message/get-signature", {folderName: STORY_FOLDER_NAME});
+        const {apiKey, cloudName, signature, timestamp} = data.data;
 
-    // Add your API call here
-    console.log('Submitting:', Object.fromEntries(formData));
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("api_key", apiKey);
+        formData.append("timestamp", timestamp.toString());
+        formData.append("signature", signature);
+        formData.append("folder", STORY_FOLDER_NAME);
+
+        const {data: uploadData} = await axios.post(
+          `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, 
+          formData,
+          {
+            onUploadProgress: (progressEvent) => {
+              const progress = progressEvent.total ?
+                Math.round((progressEvent.loaded * 100) / progressEvent.total) :
+                0; 
+              setProgress(progress);
+            }
+          }
+        )
+        const mediaUrl = uploadData.secure_url as string;
+        requestBody.content = {
+          mediaUrl,
+          duration: durationInSec,
+          caption
+        }
+      } catch (error) {
+        toast.error("Failed to upload file, please try again");
+        console.error(error);
+        setLoading(false);
+        return;
+      } 
+    }
+    try {
+      setLoading(true);
+      setProgress(100);
+      const {data} = await instance.post<ResponseWithData<MyStory>>("/story/create", requestBody);
+      dispatch(appendToMyStories(data.data));
+      toast.success("Story created successfully");
+    } catch (error) {
+      if(error instanceof AxiosError && error.response){
+        toast.error(error.response.data.message);
+      }
+      console.error(error);
+    }finally{setLoading(false);}
   };
 
   return (
@@ -226,6 +292,7 @@ const CreateStoryModal = () => {
                   type="button"
                   variant="outline"
                   onClick={handleGenerateRandomStyle}
+                  disabled={loading}
                 >
                   Randomize Style
                 </Button>
@@ -233,6 +300,7 @@ const CreateStoryModal = () => {
                 <div className="flex items-center gap-2">
                   <Label>Background:</Label>
                   <input
+                    disabled={loading}
                     type="color"
                     value={backgroundColor}
                     onChange={(e) => setBackgroundColor(e.target.value)}
@@ -243,6 +311,7 @@ const CreateStoryModal = () => {
                 <div className="flex items-center gap-2">
                   <Label>Text Color:</Label>
                   <input
+                    disabled={loading}
                     type="color"
                     value={textColor}
                     onChange={(e) => setTextColor(e.target.value)}
@@ -251,6 +320,7 @@ const CreateStoryModal = () => {
                 </div>
 
                 <Button
+                  disabled={loading}
                   type="button"
                   variant="outline"
                   onClick={() => setSelectedFont(getRandomFontFamily())}
@@ -264,6 +334,7 @@ const CreateStoryModal = () => {
                 style={{ backgroundColor }}
               >
                 <Textarea
+                  disabled={loading}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   className={cn(
@@ -284,12 +355,12 @@ const CreateStoryModal = () => {
                 {(selectedFileType === "video" || selectedFileType === "audio") && <p>{Math.round(durationInSec)} Sec</p>}
                 <XIcon
                   className="w-6 h-6 cursor-pointer ml-5"
-                  onClick={() => {
+                  onClick={!loading ? () => {
                     setSelectedFile(null);
                     setDurationInSec(15);
                     setSelectedFileType(null);
                     setPreviewObjectUrl('');
-                  }}
+                  } : undefined}
                 />
               </div>}
 
@@ -300,12 +371,12 @@ const CreateStoryModal = () => {
                   selectedFile && "border-none",
                 )}
                 onClick={() => {
-                  if (selectedFile) return;
+                  if (selectedFile || loading) return;
                   fileInputRef.current?.click();
                 }}
                 onDragOver={(e) => {
                   e.preventDefault();
-                  if (selectedFile) return;
+                  if (selectedFile || loading) return;
                   setIsDragOver(true);
                 }}
                 onDragLeave={(e) => {
@@ -333,8 +404,8 @@ const CreateStoryModal = () => {
                       "text-sm text-muted-foreground",
                       isDragOver && "text-white"
                     )}>{
-                      isDragOver ? "Drop the file here" : "Drag and drop or click to select a file"
-                    }</p>
+                        isDragOver ? "Drop the file here" : "Drag and drop or click to select a file"
+                      }</p>
                   </div>
                 )}
                 {selectedFileType === 'image' && (
@@ -357,8 +428,8 @@ const CreateStoryModal = () => {
 
                 {selectedFileType === 'audio' && (
                   <>
-                    <AudioAnimation 
-                      isPaused={isMediaPaused} 
+                    <AudioAnimation
+                      isPaused={isMediaPaused}
                       onClick={handleAudioPause}
                     />
                     <audio
@@ -375,6 +446,7 @@ const CreateStoryModal = () => {
 
               <Textarea
                 value={caption}
+                disabled={loading}
                 onChange={(e) => setCaption(e.target.value)}
                 placeholder="Add a caption..."
                 className="resize-none"
@@ -384,8 +456,9 @@ const CreateStoryModal = () => {
         </Tabs>
 
         <MyButton
-          title='Create Story'
+          title={loading ? progress < 100 ? `${progress}% Uploading...` : "Creating..." : 'Create Story'}
           onClick={handleSubmit}
+          loading={loading}
         />
       </DialogContent>
     </Dialog>
