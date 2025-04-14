@@ -1,35 +1,37 @@
-import { FriendStory, MyStory, WhoseStory } from "@/interface/storyInterface";
+import { FriendStory, isFriendStory, MyStory, WhoseStory } from "@/interface/storyInterface";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent } from "../ui/dialog";
 import FriendStoryContent from "./FriendStoryContent";
 import MyStoryContent from "./MyStoryContent";
+import StoryHeader from "./StoryHeader";
+import { useAppSelector } from "@/hooks/hooks";
 
-interface BaseProps{
+interface BaseProps {
   onNextFriend?: ((index: number) => void);
   onPrevFriend?: ((index: number) => void);
   globalIndex: number;
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>
 }
-interface ForFriendProps extends BaseProps{
+interface ForFriendProps extends BaseProps {
   whose: WhoseStory.Friend;
   stories: FriendStory[]
 }
 
-interface ForMineProps extends BaseProps{
+interface ForMineProps extends BaseProps {
   whose: WhoseStory.Mine;
   stories: MyStory[]
 }
 
 type Props = ForFriendProps | ForMineProps;
-const StoriesModal: React.FC<Props> = ({ 
-  stories, 
-  isOpen, 
-  setIsOpen, 
-  onNextFriend, 
-  globalIndex, 
+const StoriesModal: React.FC<Props> = ({
+  stories,
+  isOpen,
+  setIsOpen,
+  onNextFriend,
+  globalIndex,
   whose,
   onPrevFriend
 }) => {
@@ -39,13 +41,28 @@ const StoriesModal: React.FC<Props> = ({
 
   const currentStory = stories[currentIndex];
 
+  const { user } = useAppSelector(state => state.user);
   const pausedTime = useRef<number>(0);
-  const pausedDuration = useRef<number>(0); 
+  const pausedDuration = useRef<number>(0);
   const startTime = useRef<number>(0);
   const rafId = useRef<number>();
 
+  const storyOwner = useMemo(() => {
+    if (!currentStory) return null;
+    return isFriendStory(currentStory)
+      ? {
+        name: currentStory.user.name,
+        avatar: currentStory.user.profilePic?.avatar
+      }
+      :
+      {
+        name: user?.name || "",
+        avatar: user?.profilePic?.avatar
+      }
+  }, [currentStory, user]);
+
   useEffect(() => {
-    if(isOpen) setIsPaused(false);
+    if (isOpen) setIsPaused(false);
   }, [isOpen]);
 
   useEffect(() => {
@@ -106,12 +123,12 @@ const StoriesModal: React.FC<Props> = ({
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
       setProgress(0);
-    }else{
+    } else {
       if (onPrevFriend && typeof onPrevFriend === "function") onPrevFriend(globalIndex);
     }
   };
 
-  function handleClose() {
+  const handleClose = useCallback(() => { //todo fix the header rendering
     setIsOpen(false);
     setCurrentIndex(0);
     setProgress(0);
@@ -119,27 +136,27 @@ const StoriesModal: React.FC<Props> = ({
     pausedTime.current = 0;
     pausedDuration.current = 0;
     startTime.current = 0;
-  }
+  }, [])
 
   return (
     <Dialog
       open={isOpen}
       onOpenChange={handleClose}
     >
-      <DialogContent className="p-0 border-none max-w-xl w-full top-[45%]">
+      <DialogContent className="p-0 border-none max-w-xl w-full top-[47%] md:top-[47%] bg-transparent [&>button]:hidden">
         <VisuallyHidden>
           <DialogTitle>Stories</DialogTitle>
           <DialogDescription>Stories Description</DialogDescription>
         </VisuallyHidden>
-        <div className="relative bg-black/90 backdrop-blur-sm transition-opacity z-10 rounded-sm">
-          <div className="absolute top-4 left-4 right-4 flex gap-1 z-20">
+        <div className="relative backdrop-blur-sm transition-opacity z-10 rounded-sm">
+          <div className="flex gap-1 z-20 my-2 px-1 mt-2 md:mt-0">
             {stories.map((story, index) => (
               <div
                 key={story._id}
-                className="h-1 bg-gray-800/50 flex-1 rounded-full overflow-hidden relative"
+                className="h-1 bg-gray-500 dark:bg-gray-700 flex-1 rounded-full overflow-hidden relative"
               >
                 <div
-                  className="h-full bg-white/80 absolute top-0 left-0"
+                  className="h-full bg-primary-1 absolute top-0 left-0"
                   style={{
                     width:
                       index < currentIndex
@@ -153,10 +170,18 @@ const StoriesModal: React.FC<Props> = ({
             ))}
           </div>
 
-          <div className="relative min-h-[700px] md:max-h-[700px] w-full h-[90vh] md:h-full">
+          {currentStory && <StoryHeader
+            createdAt={currentStory.createdAt}
+            whose={whose}
+            storyId={currentStory._id}
+            onClose={handleClose}
+            storyOwner={storyOwner!}
+          />}
+
+          <div className="relative md:min-h-[700px] md:max-h-[700px] w-full h-[85vh] md:h-full mb-2 md:mb-0">
             {
-              (()=>{
-                switch(whose){
+              (() => {
+                switch (whose) {
                   case WhoseStory.Friend:
                     return <FriendStoryContent story={currentStory as FriendStory} isPaused={isPaused} />
                   case WhoseStory.Mine:
@@ -167,14 +192,14 @@ const StoriesModal: React.FC<Props> = ({
           </div>
 
           <div className="absolute w-full h-[65%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-[30%_40%_30%] z-10">
-            <p onClick={handlePrev}/>
-            <p 
+            <button onClick={handlePrev} />
+            <button
               onMouseDown={handlePlayPause}
               onMouseUp={handlePlayPause}
               onTouchStart={handlePlayPause}
               onTouchEnd={handlePlayPause}
             />
-            <p onClick={handleNext}/>
+            <button onClick={handleNext} />
           </div>
         </div>
       </DialogContent>

@@ -3,6 +3,7 @@ import { ReactionType } from '@/interface/storyInterface';
 import { EMOJI_MAPPING } from '@/utils/constants';
 import React, { memo } from 'react';
 import defaultImage from "../../assets/defaultAvatar.jpg"
+import { getSmartTimestamp } from '@/utils/utility';
 
 interface Props {
   viewedBy: IUserShort;
@@ -11,12 +12,7 @@ interface Props {
 }
 
 const StoryViewCard: React.FC<Props> = ({ createdAt, reactions, viewedBy }) => {
-  const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const formattedDate = getSmartTimestamp(new Date(createdAt));
 
   return (
     <div className="flex items-center justify-between py-2 px-4 bg-slate-200 dark:bg-dark-4 transition-colors rounded-lg group">
@@ -40,7 +36,7 @@ const StoryViewCard: React.FC<Props> = ({ createdAt, reactions, viewedBy }) => {
           {reactions.map((reaction, index) => (
             <span
               key={`${reaction}-${index}`}
-              className={`text-lg rounded-full font-medium`}
+              className="text-lg rounded-full font-medium animate-pulse-pop"
             >
               {EMOJI_MAPPING[reaction]}
             </span>

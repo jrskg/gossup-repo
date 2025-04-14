@@ -107,6 +107,7 @@ export default {
         'glow-pulse': 'glow-pulse 2s infinite',
         'slide-in-right': 'slideInRight 0.4s ease-out',
         'float': 'float 3s ease-in-out infinite',
+        'pulse-pop': 'pulse-pop 0.8s ease-in-out infinite',
       },
       keyframes: {
         smoothBounce: {
@@ -129,6 +130,10 @@ export default {
             transform: 'translateY(-6px) scale(1.05)',
             filter: 'brightness(1.1)'
           },
+        },
+        'pulse-pop': {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.3)' },
         },
       },
     },

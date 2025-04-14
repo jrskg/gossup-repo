@@ -22,7 +22,7 @@ const TextStory: React.FC<Props> = ({ content }) => {
         boxShadow: `0 20px 40px rgba(0,0,0,0.15)`,
       }}
     >
-      <p className="text-4xl text-center transform transition-transform duration-300 hover:scale-105">
+      <p className="text-2xl text-center transform transition-transform duration-300 hover:scale-105">
         {text}
       </p>
     </div>

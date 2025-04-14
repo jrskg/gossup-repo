@@ -363,6 +363,7 @@ export const reactOnFriendsStory = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
   const { storyId } = req.params;
   const { reactions } = req.body;
+  console.log(reactions);
   if (!storyId || !isValidObjectId(storyId)) {
     return next(new ApiError(BAD_REQUEST, "Invalid story id"));
   }

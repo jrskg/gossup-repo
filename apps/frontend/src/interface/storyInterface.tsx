@@ -25,12 +25,12 @@ export interface MediaContent {
 
 export interface BaseStory {
   _id: string;
-  userId: string;
   type: StoryType;
   content: TextContent | MediaContent;
   createdAt: string;
   updatedAt: string;
 
+  // userId: string;
   //not needed in frontend
   // visibility: VisibilityType;
   // allowedUsers: string[];
@@ -65,6 +65,13 @@ export function isMediaStory<T extends BaseStory>(story: T): story is T & { cont
   return ['image', 'video', 'audio'].includes(story.type);
 }
 
+export function isFriendStory<T extends BaseStory>(story: T): story is T & { user: IUserShort } {
+  return 'user' in story;
+}
+
+export function isMyStory<T extends BaseStory>(story: T): story is T & { views: StoryView[] } {
+  return 'views' in story;
+}
 export interface FriendStoryResponse{
   stories: FriendStory[];
   totalStoryCount: number;

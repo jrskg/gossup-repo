@@ -1,4 +1,4 @@
-import { FriendStory, FriendStoryResponse, MyStory } from "@/interface/storyInterface";
+import { FriendStory, FriendStoryResponse, MyStory, ReactionType } from "@/interface/storyInterface";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface IStoryState{
@@ -30,6 +30,9 @@ const storySlice = createSlice({
     appendToMyStories(state, action: PayloadAction<MyStory>){
       state.myStories.unshift(action.payload);
     },
+    deleteMyStory(state, action: PayloadAction<string>){
+      state.myStories = state.myStories.filter(story => story._id !== action.payload);
+    },
     setStoryStateStatus(state, action: PayloadAction<StoryStateStatus>){
       state.status = action.payload;
     },
@@ -48,6 +51,20 @@ const storySlice = createSlice({
       });
       state.friendStoriesMap = map;
       state.orderedFriendIds = orderedIds;
+    },
+    updateStoryViewAndReaction(state, action: PayloadAction<{friendId: string, storyId: string, reactions?: ReactionType[]}>){
+      const {friendId, reactions, storyId} = action.payload;
+      const stories = state.friendStoriesMap[friendId];
+      if(stories){
+        const story = stories.find(s => s._id === storyId);
+        if(story){
+          story.hasViewed = true;
+          if(reactions){
+            story.reactions.push(...reactions);
+            story.reactions.splice(0, story.reactions.length - 5);
+          }
+        }
+      }
     }
   }
 });
@@ -56,7 +73,9 @@ export const  {
   setMyStories,
   appendToMyStories,
   setStoryStateStatus,
-  setFriendStories
+  setFriendStories,
+  updateStoryViewAndReaction,
+  deleteMyStory
 } = storySlice.actions;
 
 export default storySlice.reducer;

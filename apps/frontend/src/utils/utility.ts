@@ -16,7 +16,7 @@
 // export { checkConnection }
 
 import type { ChatType, FileType } from '@/interface/chatInterface';
-import { format, isAfter, isSameDay, isSameYear, subDays } from 'date-fns';
+import { differenceInHours, differenceInMinutes, differenceInSeconds, format, isAfter, isSameDay, isSameYear, subDays } from 'date-fns';
 
 const toggleDarkMode = (setDarkMode: boolean) => {
   const list = document.documentElement.classList;
@@ -80,6 +80,42 @@ const getMessageTimestamp = (date?: Date): { time: string, date?: string } => {
   }
 };
 
+const getSmartTimestamp = (date?: Date): string => {
+  if (!date) return "";
+
+  const now = new Date();
+  const seconds = differenceInSeconds(now, date);
+  const minutes = differenceInMinutes(now, date);
+  const hours = differenceInHours(now, date);
+
+  if (seconds < 5) return "Just now";
+  if (seconds < 60) return `${seconds} sec ago`;
+  if (minutes < 60) return minutes === 1 ? `1 min ago` : `${minutes} mins ago`;
+
+  // Less than 24 hours -> show actual time
+  if (hours < 24 && isSameDay(date, now)) {
+    return format(date, 'p'); // e.g., 2:45 PM
+  }
+
+  // Yesterday
+  if (isSameDay(date, subDays(now, 1))) {
+    return `Yesterday, ${format(date, 'p')}`;
+  }
+
+  // Last 7 days
+  if (isAfter(date, subDays(now, 7))) {
+    return `${format(date, 'EEEE')}, ${format(date, 'p')}`; // Monday, 2:30 PM
+  }
+
+  // Same year
+  if (isSameYear(date, now)) {
+    return `${format(date, 'd MMM')}, ${format(date, 'p')}`; // 11 Apr, 5:00 PM
+  }
+
+  // Older
+  return `${format(date, 'd MMM yyyy')}, ${format(date, 'p')}`; // 11 Apr 2023, 5:00 PM
+};
+
 //where ever you nsId (nextSenderId) that is used when the message container is flex-col-reverse but in case of normal flow use psId(prevSenderId) simply replace with psId and make changes to MessageCard and MessageContainer to send prevSenderId
 const getMainConatainerStyle = (sId: string, lguId: string): string => {
   return sId === lguId ?
@@ -109,7 +145,7 @@ const getMessageBoxStyle = (sId: string, lguId: string, chType: ChatType, nsId?:
   return isAvatarVisible ? "rounded-xl rounded-tl-none" : "rounded-xl ml-10";
 }
 
-const getTriangleStyle = (sId: string, lguId: string, nsId?:string): string => {
+const getTriangleStyle = (sId: string, lguId: string, nsId?: string): string => {
   if (sId === lguId) {
     return sId === nsId ? "hidden" : "-right-3";
   }
@@ -136,15 +172,14 @@ const getDateStyle = (sId: string, lguId: string, chType: ChatType): string => {
   return "";
 }
 
-const getMapFromArray = <T extends {_id: string}, U extends Record<string, T>>(arr: T[]): 
-{map:U, orderedIds:string[]} => {
-  const map:Record<string, T> = {};
-  const orderedIds:string[] = [];
+const getMapFromArray = <T extends { _id: string }, U extends Record<string, T>>(arr: T[]): { map: U, orderedIds: string[] } => {
+  const map: Record<string, T> = {};
+  const orderedIds: string[] = [];
   arr.forEach(p => {
     map[p._id] = p;
     orderedIds.push(p._id);
   });
-  return {map: map as U, orderedIds};
+  return { map: map as U, orderedIds };
 }
 
 function throttle(func: Function, limit: number) {
@@ -177,7 +212,7 @@ const getFileExtension = (fileName: string): string | null => {
 const getMediaDuration = (file: File): Promise<number> => {
   return new Promise((resolve) => {
     const fileType = getFileType(file.type);
-    if(fileType !== "video" && fileType !== "audio") {
+    if (fileType !== "video" && fileType !== "audio") {
       resolve(0);
     }
     const mediaElement = document.createElement(fileType === "video" ? "video" : "audio");
@@ -207,6 +242,7 @@ export {
   getMessageTimestamp,
   getNameStyle, getTriangleStyle,
   throttle, toggleDarkMode,
-  getMediaDuration
+  getMediaDuration,
+  getSmartTimestamp
 };
 
