@@ -3,7 +3,7 @@ import { isValidObjectId } from "mongoose";
 import { FRONTEND_URL, JWT_SECRET } from "../configs/env.index.js";
 // import { Friendship } from "../models/friendship.model.js";
 // import { User } from "../models/user.model.js";
-import {Friendship, User} from "@gossup/db-models";
+import {Friendship, User, UserPrivacy} from "@gossup/db-models";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -53,6 +53,16 @@ export const registerUser = asyncHandler(async (req, res, next) => {
     description:
       'Please click on the "Verify Email" button to verify your email',
     btnText: "Verify Email",
+  });
+
+  //initializing user privacy settings
+  await UserPrivacy.create({
+    userId: user._id,
+    storyPrivacy: {
+      visibility: "all",
+      allowedUsers: [],
+      excludedUsers: [],
+    }
   });
   res.status(CREATED).json(
     new ApiResponse(CREATED, "Welcome to GOSS-UP, Let's Chat :)", {

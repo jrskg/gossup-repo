@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { useAppDispatch } from '@/hooks/hooks';
+import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { IUploadSignature, ResponseWithData } from '@/interface/interface';
 import { MyStory } from '@/interface/storyInterface';
 import { cn } from '@/lib/utils';
@@ -14,11 +14,12 @@ import { getFileType, getMediaDuration } from '@/utils/utility';
 import { DialogDescription } from '@radix-ui/react-dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import axios, { AxiosError } from "axios";
-import { DotIcon, Plus, XIcon } from 'lucide-react';
+import { DotIcon, Plus, UsersIcon, XIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import MyButton from '../MyButton';
 import AudioAnimation from './AudioAnimation';
+import ManageStoryPrivacy from './ManageStoryPrivacy';
 
 type TabType = "text" | "media";
 type MediaStoryType = "image" | "video" | "audio";
@@ -63,6 +64,7 @@ const CreateStoryModal = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const dispatch = useAppDispatch();
+  const {storyPrivacy} = useAppSelector(state => state.privacy);
 
   const generateRandomColor = (): string => {
     const r = Math.floor(Math.random() * 256); // 0-255
@@ -173,9 +175,9 @@ const CreateStoryModal = () => {
   const handleSubmit = async () => {
     setProgress(0);
     const requestBody = {
-      visibility: "all",
-      allowedUsers: [],
-      excludedUsers: [],
+      visibility: storyPrivacy.visibility,
+      allowedUsers: storyPrivacy.allowedUsers.map(user => user._id),
+      excludedUsers: storyPrivacy.excludedUsers.map(user => user._id),
       type: "text",
       content: {}
     };
@@ -200,8 +202,8 @@ const CreateStoryModal = () => {
       try {
         setLoading(true);
         const STORY_FOLDER_NAME = "storyMedia";
-        const {data} = await instance.post<ResponseWithData<IUploadSignature>>("/message/get-signature", {folderName: STORY_FOLDER_NAME});
-        const {apiKey, cloudName, signature, timestamp} = data.data;
+        const { data } = await instance.post<ResponseWithData<IUploadSignature>>("/message/get-signature", { folderName: STORY_FOLDER_NAME });
+        const { apiKey, cloudName, signature, timestamp } = data.data;
 
         const formData = new FormData();
         formData.append("file", selectedFile);
@@ -210,14 +212,14 @@ const CreateStoryModal = () => {
         formData.append("signature", signature);
         formData.append("folder", STORY_FOLDER_NAME);
 
-        const {data: uploadData} = await axios.post(
-          `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, 
+        const { data: uploadData } = await axios.post(
+          `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
           formData,
           {
             onUploadProgress: (progressEvent) => {
               const progress = progressEvent.total ?
                 Math.round((progressEvent.loaded * 100) / progressEvent.total) :
-                0; 
+                0;
               setProgress(progress);
             }
           }
@@ -233,20 +235,20 @@ const CreateStoryModal = () => {
         console.error(error);
         setLoading(false);
         return;
-      } 
+      }
     }
     try {
       setLoading(true);
       setProgress(100);
-      const {data} = await instance.post<ResponseWithData<MyStory>>("/story/create", requestBody);
+      const { data } = await instance.post<ResponseWithData<MyStory>>("/story/create", requestBody);
       dispatch(appendToMyStories(data.data));
       toast.success("Story created successfully");
     } catch (error) {
-      if(error instanceof AxiosError && error.response){
+      if (error instanceof AxiosError && error.response) {
         toast.error(error.response.data.message);
       }
       console.error(error);
-    }finally{setLoading(false);}
+    } finally { setLoading(false); }
   };
 
   return (
@@ -454,7 +456,35 @@ const CreateStoryModal = () => {
             </div>
           </TabsContent>
         </Tabs>
-
+        <div className='px-3 py-2 bg-background/95 rounded-xl border'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center gap-2.5'>
+              <h3 className='font-semibold text-base text-foreground'>
+                Story Visibility
+              </h3>
+              <span className='text-muted-foreground'>
+                <DotIcon className='w-4 h-4 mx-1' />
+              </span>
+              <div className='flex items-center gap-1.5'>
+                <UsersIcon className='w-4 h-4' />
+                <span className='text-sm '>
+                  {
+                    storyPrivacy.visibility === "all" 
+                    ? "All Friends"
+                    : storyPrivacy.visibility === "only"
+                    ? `Only ${storyPrivacy.allowedUsers.length} Friends`
+                    : `Except ${storyPrivacy.excludedUsers.length} Friends`
+                  }
+                </span>
+              </div>
+            </div>
+            <ManageStoryPrivacy 
+              allowedUsers={storyPrivacy.allowedUsers}
+              excludedUsers={storyPrivacy.excludedUsers}
+              visibility={storyPrivacy.visibility}
+            />
+          </div>
+        </div>
         <MyButton
           title={loading ? progress < 100 ? `${progress}% Uploading...` : "Creating..." : 'Create Story'}
           onClick={handleSubmit}

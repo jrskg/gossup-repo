@@ -7,11 +7,12 @@ import FriendCardSimple from './FriendCardSimple';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 interface Props {
-  onFriendClick: (userId: string, name: string) => void
+  onFriendClick: (userId: string, name: string, avatar: string) => void
 }
 const FriendSelector: React.FC<Props> = ({
   onFriendClick
 }) => {
+  console.log("friendSelector")
   const [searchQuery, setSearchQuery] = useState('');
   const [searchedPage, setSearchedPage] = useState(1);
   const {
@@ -36,9 +37,9 @@ const FriendSelector: React.FC<Props> = ({
     }
   })
 
-  const handleCardClick = useCallback((userId: string, name: string) => {
-    onFriendClick(userId, name);
-  }, []);
+  const handleCardClick = useCallback((userId: string, name: string, avatar: string) => {
+    onFriendClick(userId, name, avatar);
+  }, [onFriendClick]);
 
   useEffect(() => {
     if (friends.length === 0) {

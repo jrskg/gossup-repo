@@ -77,3 +77,14 @@ export interface FriendStoryResponse{
   totalStoryCount: number;
   hasMore: boolean;
 }
+
+export interface StoryPrivacy{
+  visibility: VisibilityType;
+  allowedUsers: IUserShort[];
+  excludedUsers: IUserShort[];
+}
+
+export interface UserPrivacy{
+  _id: string;
+  storyPrivacy: StoryPrivacy;
+}

@@ -25,12 +25,14 @@ import friendshipRoute from "./routes/friendship.route.js";
 import chatRoute from "./routes/chat.route.js";
 import messageRoute from "./routes/message.route.js";
 import storyRoute from "./routes/story.route.js";
+import privacyRoute from "./routes/privacy.route.js";
 //Use routes
 app.use("/api/v1/user", userRoute);
 app.use("/api/v1/friendship", friendshipRoute);
 app.use("/api/v1/chat", chatRoute);
 app.use("/api/v1/message", messageRoute);
 app.use("/api/v1/story", storyRoute);
+app.use("/api/v1/privacy", privacyRoute);
 
 app.use(error);
 app.use("*", (req, res) => {
