@@ -67,7 +67,6 @@ const ManageStoryPrivacy: React.FC<Props> = ({
     }
   }
   const handleFriendClick = useCallback((id: string, name: string, avatar: string) => {
-    console.log("Friend clicked", id, name, avatar);
     updateSelectedFriendRef.current(id, name, avatar);
   }, []);
 

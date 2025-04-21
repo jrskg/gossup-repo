@@ -52,12 +52,14 @@ const StoriesModal: React.FC<Props> = ({
     return isFriendStory(currentStory)
       ? {
         name: currentStory.user.name,
-        avatar: currentStory.user.profilePic?.avatar
+        avatar: currentStory.user.profilePic?.avatar,
+        _id: currentStory.user._id
       }
       :
       {
         name: user?.name || "",
-        avatar: user?.profilePic?.avatar
+        avatar: user?.profilePic?.avatar,
+        _id: user?._id || ""
       }
   }, [currentStory, user]);
 

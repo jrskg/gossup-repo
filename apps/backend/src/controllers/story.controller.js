@@ -346,17 +346,20 @@ export const viewFriendsStory = asyncHandler(async (req, res, next) => {
     return next(new ApiError(NOT_FOUND, "Story not found"));
   }
 
-  const storyView = await StoryView.updateOne(
+  const storyView = await StoryView.findOneAndUpdate(
     { storyId, viewedBy: userId },
     { $setOnInsert: { storyId, viewedBy: userId, reactions: [] } },
-    { upsert: true }
-  );
+    { upsert: true, new: true }
+  )
+    .populate("viewedBy","_ id name profilePic")
+    .select("-storyId -__v")
+    .lean();
 
   if (!storyView) {
     return next(new ApiError(INTERNAL_SERVER_ERROR, "Something went wrong"));
   }
 
-  res.status(OK).json(new ApiResponse(OK, "Story viewed"));
+  res.status(OK).json(new ApiResponse(OK, "Story viewed", storyView));
 });
 
 export const reactOnFriendsStory = asyncHandler(async (req, res, next) => {

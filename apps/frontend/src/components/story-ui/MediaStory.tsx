@@ -30,7 +30,7 @@ const MediaStory: React.FC<Props> = ({ content, isPaused, type }) => {
           <img
             src={mediaUrl}
             alt="story"
-            className="w-full h-full object-cover object-center rounded-md"
+            className="w-full h-full object-cover object-center rounded-md bg-slate-500 dark:bg-slate-700"
           />
         );
       case 'video':
@@ -38,7 +38,7 @@ const MediaStory: React.FC<Props> = ({ content, isPaused, type }) => {
           <video
             ref={videoRef}
             src={mediaUrl}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain bg-slate-500 dark:bg-slate-700 rounded-md"
             autoPlay
             playsInline
           />

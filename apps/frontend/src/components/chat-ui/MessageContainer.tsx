@@ -20,7 +20,6 @@ import { addMoreMessageOnScroll } from '@/redux/slices/messages';
 interface IMoreMessageResponse{
   messages: IMessage[];
   hasMore: boolean;
-  totalMessages: number
 };
 
 //in this component you may feel that everything is in reverse order yes it is because the container is rendering things in reverse using flex-col-reverse
@@ -47,7 +46,7 @@ const MessageContainer: React.FC<MessageContainerProps> = ({
     seenMessagesIds, 
     newMessagesIds,
     hasMore,
-    page
+    cursor
   } = allMessages[selectedChatId];
 
   const [moreLoading, setMoreLoading] = useState(false);
@@ -59,7 +58,7 @@ const MessageContainer: React.FC<MessageContainerProps> = ({
     onLoadMore: async () => {
       if(moreLoading) return;
       try {
-        const {data} = await instance.get<ResponseWithData<IMoreMessageResponse>>(`/message/all?chatId=${selectedChatId}&page=${page}`);
+        const {data} = await instance.get<ResponseWithData<IMoreMessageResponse>>(`/message/all?chatId=${selectedChatId}&cursor=${cursor}`);
         if(data.success){
           dispatch(addMoreMessageOnScroll({
             chatId: selectedChatId,

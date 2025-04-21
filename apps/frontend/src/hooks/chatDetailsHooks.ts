@@ -5,34 +5,36 @@ import { addParticipant, addToChatState, removeParticipantFromChatState, toggleA
 import { removeParticipantFromSelectedChat, toggleAdminInSelectedChat } from "@/redux/slices/selectedChat";
 import { useSocket } from "@/context/socketContext";
 import { SOCKET_EVENTS } from "@/utils/constants";
+import { useCallback } from "react";
 
 const useChatDetailsUpdates = () => {
-  //Created this hook because of resuability we need to update the chat details locally and via socket events 
   const handleSelectedChat = useSetSelectedChat();
-  const whenChatUpdated = (updatedChat:IChat, dispatch:AppDispatch, isCurrentChat = true) => {
-    if(isCurrentChat) {handleSelectedChat(updatedChat);}
+
+  const whenChatUpdated = useCallback((updatedChat: IChat, dispatch: AppDispatch, isCurrentChat = true) => {
+    if (isCurrentChat) handleSelectedChat(updatedChat);
     dispatch(updateChat(updatedChat));
-  }
+  }, [handleSelectedChat]);
 
-  const whenAdminToggled = (chatId: string, participantId: string, dispatch: AppDispatch, isCurrentChat = true) => {
-    dispatch(toggleAdminInChatState({chatId, participantId}));
-    if(isCurrentChat) {dispatch(toggleAdminInSelectedChat(participantId));}
-  }
+  const whenAdminToggled = useCallback((chatId: string, participantId: string, dispatch: AppDispatch, isCurrentChat = true) => {
+    dispatch(toggleAdminInChatState({ chatId, participantId }));
+    if (isCurrentChat) dispatch(toggleAdminInSelectedChat(participantId));
+  }, []);
 
-  const whenParticipantRemoved = (chatId: string, participantId: string, dispatch: AppDispatch, isCurrentChat = true) => {
-    dispatch(removeParticipantFromChatState({chatId, participantId}));
-    if(isCurrentChat) {dispatch(removeParticipantFromSelectedChat(participantId));}
-  }
+  const whenParticipantRemoved = useCallback((chatId: string, participantId: string, dispatch: AppDispatch, isCurrentChat = true) => {
+    dispatch(removeParticipantFromChatState({ chatId, participantId }));
+    if (isCurrentChat) dispatch(removeParticipantFromSelectedChat(participantId));
+  }, []);
 
-  const whenGroupChatCreated = (chat: IChat, participants: Participants, dispatch: AppDispatch, isCurrentChat = true) => {
-    dispatch(addToChatState({chats: [chat], participants}));
+  const whenGroupChatCreated = useCallback((chat: IChat, participants: Participants, dispatch: AppDispatch, isCurrentChat = true) => {
+    dispatch(addToChatState({ chats: [chat], participants }));
     if (isCurrentChat) handleSelectedChat(chat);
-  }
-  const whenParticipantsAdded = (chat: IChat, participants: Participants, dispatch: AppDispatch, isCurrentChat = true) => {
+  }, [handleSelectedChat]);
+
+  const whenParticipantsAdded = useCallback((chat: IChat, participants: Participants, dispatch: AppDispatch, isCurrentChat = true) => {
     dispatch(updateChat(chat));
     dispatch(addParticipant(participants));
     if (isCurrentChat) handleSelectedChat(chat);
-  }
+  }, [handleSelectedChat]);
 
   return {
     whenChatUpdated,
@@ -41,42 +43,42 @@ const useChatDetailsUpdates = () => {
     whenGroupChatCreated,
     whenParticipantsAdded
   }
-}
+};
 
 const useChatDetailsSocketEmits = () => {
-  const {socket} = useSocket();
+  const { socket } = useSocket();
   const emitNameAndIconChange = (updatedChat: IChat) => {
-    if(!socket) return;
+    if (!socket) return;
     socket.emit(SOCKET_EVENTS.CHAT_NAME_ICON_UPDATE, {
       chatId: updatedChat._id,
       updatedChat
     });
   }
   const emitAdminToggle = (chatId: string, participantId: string, participants: string[]) => {
-    if(!socket) return;
+    if (!socket) return;
     socket.emit(SOCKET_EVENTS.TOGGLE_ADMIN, {
       chatId,
       participantId,
       participants
     });
-  } 
+  }
   const emitParticipantRemove = (chatId: string, participantId: string, participants: string[]) => {
-    if(!socket) return;
+    if (!socket) return;
     socket.emit(SOCKET_EVENTS.REMOVED_PARTICIPANT, {
       chatId,
       participantId,
       participants
     });
-  } 
+  }
   const emitLeaveGroup = (chatId: string, updatedChat: IChat) => {
-    if(!socket) return;
+    if (!socket) return;
     socket.emit(SOCKET_EVENTS.LEAVE_GROUP, {
       chatId,
       updatedChat
     });
-  } 
+  }
   const emitCreateOrAddParticipants = (chatId: string, participants: string[]) => {
-    if(!socket) return;
+    if (!socket) return;
     socket.emit(SOCKET_EVENTS.CREATE_OR_ADD_PARTICIPANTS, {
       chatId,
       participants,

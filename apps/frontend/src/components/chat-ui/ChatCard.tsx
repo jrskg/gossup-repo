@@ -13,7 +13,7 @@ export interface LastMessageRenderData {
 interface ChatCardProps {
   avatar: string
   chatName: string
-  lastMessageRenderData: LastMessageRenderData | null;
+  lastMessageRenderData: LastMessageRenderData | null; //if you change the name of this prop make sure to change the custom memo comparator in the memo function below
   lastMessageTime?: string
   chat: IChat
   onChatClick: (chat: IChat) => void
@@ -61,4 +61,21 @@ const ChatCard: React.FC<ChatCardProps> = ({
     </div>
   )
 }
-export default memo(ChatCard);
+export default memo(ChatCard, (prev, next) => {
+  for(const key of Object.keys(prev) as (keyof ChatCardProps)[]){
+    if(key === "lastMessageRenderData") continue; //the above comment is for this line 
+    if(prev[key] !== next[key]) return false;
+  }
+
+  const lmrPrev = prev.lastMessageRenderData;
+  const lmrNext = next.lastMessageRenderData;
+  if(lmrPrev === lmrNext) return true;
+  if(!lmrPrev || !lmrNext) return false;
+
+  return(
+    lmrPrev.message === lmrNext.message &&
+    lmrPrev.shouldIcon === lmrNext.shouldIcon &&
+    lmrPrev.status === lmrNext.status
+  )
+
+});

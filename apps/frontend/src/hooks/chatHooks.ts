@@ -11,7 +11,7 @@ import { setSelectedChat } from "@/redux/slices/selectedChat";
 import instance from "@/utils/axiosInstance";
 import { SOCKET_EVENTS } from "@/utils/constants";
 import { AxiosError } from "axios";
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import defaultAvatar from "../assets/defaultAvatar.jpg";
 import { useAppDispatch } from "./hooks";
@@ -26,7 +26,7 @@ const useSetSelectedChat = () => {
   const selectedChatRef = useSelectedChatRef();
   const { socket } = useSocket();
 
-  const handleSelectedChat = (chat: IChat | null) => {
+  const handleSelectedChat = useCallback((chat: IChat | null) => {
     if (selectedChatRef.current?._id !== chat?._id) {
       if (socket) {
         if (chat) {
@@ -45,7 +45,7 @@ const useSetSelectedChat = () => {
     if (selectedChatRef.current) dispatch(transferNewToSeen(selectedChatRef.current._id));
     dispatch(setSelectedChat(chat));
     selectedChatRef.current = chat;
-  }
+  }, [dispatch, socket]);
 
   return handleSelectedChat
 }
@@ -73,7 +73,7 @@ const useGetAllChats = (orderedChatIds: string[], loggedInUserId: string) => {
         seenMessages: {},
         newMessagesIds: [],
         seenMessagesIds: [],
-        page: 2,
+        cursor: "",
         hasMore: true
       };
 
@@ -99,6 +99,7 @@ const useGetAllChats = (orderedChatIds: string[], loggedInUserId: string) => {
       });
       // messagesForStore[chatId].newMessagesIds.reverse();
       // messagesForStore[chatId].seenMessagesIds.reverse();
+      messagesForStore[chatId].cursor = messages.length > 0 ? messages[messages.length - 1].createdAt : "";
     });
 
     dispatch(setMessages(messagesForStore));

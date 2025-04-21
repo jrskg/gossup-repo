@@ -37,6 +37,12 @@ export const SOCKET_EVENTS = {
   CREATE_OR_ADD_PARTICIPANTS: "create_or_add_participants",
   LEAVE_GROUP: "leave_group",
 
+  I_CREATE_STORY: "i_create_story",
+  FRIEND_CREATE_STORY: "friend_create_story",
+  SEEN_FRIEND_STORY: "seen_friend_story",
+  REACTED_ON_FRIEND_STORY: "reacted_on_friend_story",
+  DELETED_MY_STORY: "deleted_my_story",
+  FRIEND_DELETED_STORY: "friend_deleted_story",
 
   USER_ONLINE: "user_online",
   USER_OFFLINE: "user_offline",

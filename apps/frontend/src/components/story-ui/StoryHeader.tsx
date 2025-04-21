@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { AxiosError } from 'axios';
 import { useAppDispatch } from '@/hooks/hooks';
 import { deleteMyStory } from '@/redux/slices/story';
+import { useSocket } from '@/context/socketContext';
+import { SOCKET_EVENTS } from '@/utils/constants';
 
 interface Props {
   createdAt: string;
@@ -20,6 +22,7 @@ interface Props {
   storyOwner: {
     name: string;
     avatar?: string;
+    _id: string;
   },
   onClose: () => void
 }
@@ -32,12 +35,14 @@ const StoryHeader: React.FC<Props> = ({
   onClose
 }) => {
   console.log("render story header");
-  const { name, avatar } = storyOwner;
+  const { name, avatar, _id: storyOwnerId } = storyOwner;
   const [dropDownOpen, setDropDownOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();
 
   const btnRef = useRef<HTMLButtonElement | null>(null);
+
+  const {socket}= useSocket();
 
   const handleStoryDelete = async() => {
     try {
@@ -46,6 +51,12 @@ const StoryHeader: React.FC<Props> = ({
       toast.success(data.message);
       dispatch(deleteMyStory(storyId));
       onClose();
+      if(socket){
+        socket.emit(SOCKET_EVENTS.DELETED_MY_STORY, {
+          storyId,
+          storyOwnerId
+        })
+      }
     } catch (error) {
       if(error instanceof AxiosError && error.response){
         toast.error(error.response.data.message);

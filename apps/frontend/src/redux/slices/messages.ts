@@ -4,7 +4,8 @@ import { addToChatState, appendToChatState } from "./chats";
 import { IMessageStatusUpdatePayload } from "@/interface/socketEvents";
 
 interface IChatMessages{
-  page: number;
+  // page: number;
+  cursor: string;
   hasMore: boolean;
   seenMessages: Record<string, IMessage>;
   newMessages: Record<string, IMessage>;
@@ -24,7 +25,7 @@ const initilizeMessage = (state:IMessagesState, chats:IChat[]) => {
     if(!state.messages[chat._id]){
       state.messages[chat._id] = {
         hasMore: true,
-        page: 2,
+        cursor: "",
         seenMessages: {},
         newMessages: {},
         seenMessagesIds: [],
@@ -44,7 +45,7 @@ const messagesSlice = createSlice({
       chatIds.forEach(chatId => {
         state.messages[chatId] = {
           hasMore: true,
-          page: 2,
+          cursor: "",
           seenMessages: {},
           newMessages: {},
           seenMessagesIds: [],
@@ -102,7 +103,7 @@ const messagesSlice = createSlice({
           chatMessages.seenMessages[message._id] = message;
           chatMessages.seenMessagesIds.push(message._id);
         });
-        chatMessages.page += 1;
+        chatMessages.cursor = messages[messages.length - 1]._id;
       }
       chatMessages.hasMore = hasMore;
     }

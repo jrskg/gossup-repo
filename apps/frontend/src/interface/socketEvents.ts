@@ -1,5 +1,7 @@
 import {SOCKET_EVENTS} from "../utils/constants";
 import type { DeliveryStatus, IChat, IMessage } from "./chatInterface";
+import { IUserShort } from "./interface";
+import { MyStory, ReactionType, StoryView } from "./storyInterface";
 
 export interface IMessageStatusUpdatePayload {
   roomId: string;
@@ -47,5 +49,32 @@ export type SocketEventMap = {
   [SOCKET_EVENTS.CREATE_OR_ADD_PARTICIPANTS]: (payload:{
     chatId: string,
     participants: string[]
+  }) => void;
+
+  [SOCKET_EVENTS.I_CREATE_STORY]: (payload:{
+    story: MyStory,
+  }) => void;
+  [SOCKET_EVENTS.FRIEND_CREATE_STORY]: (payload:{
+    story: MyStory,
+    user: IUserShort,
+  }) => void;
+  [SOCKET_EVENTS.SEEN_FRIEND_STORY]: (payload:{
+    storyId: string,
+    storyView: StoryView,
+    storyOwnerId: string,
+  }) => void;
+  [SOCKET_EVENTS.REACTED_ON_FRIEND_STORY]: (payload:{
+    storyId: string,
+    reactions: ReactionType[],
+    userId: string;
+    storyOwnerId: string,
+  }) => void;
+  [SOCKET_EVENTS.DELETED_MY_STORY]: (payload:{
+    storyId: string,
+    storyOwnerId: string,
+  }) => void;
+  [SOCKET_EVENTS.FRIEND_DELETED_STORY]: (payload:{
+    storyId: string,
+    storyOwnerId: string,
   }) => void;
 }

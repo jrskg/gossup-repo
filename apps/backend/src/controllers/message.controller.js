@@ -17,9 +17,7 @@ import {
 } from "../configs/env.index.js";
 
 export const getMessagesOfChat = asyncHandler(async (req, res, next) => {
-  let { chatId, page } = req.query;
-  page = isNaN(page) ? 1 : Number(page);
-  if (page < 1) page = 1;
+  let { chatId, cursor } = req.query;
   const limit = 20;
 
   if (!chatId || !isValidObjectId(chatId)) {
@@ -38,25 +36,20 @@ export const getMessagesOfChat = asyncHandler(async (req, res, next) => {
     );
   }
   const messages = await Message.aggregate([
-    { $match: { chatId: Types.ObjectId.createFromHexString(chatId) } },
-    { $sort: { createdAt: -1 } },
     {
-      $facet: {
-        data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
-        total: [{ $count: "count" }],
+      $match: {
+        chatId: Types.ObjectId.createFromHexString(chatId),
+        ...(cursor ? { createdAt: { $lt: new Date(cursor) } } : {}),
       },
     },
+    { $sort: { createdAt: -1 } },
+    { $limit: limit },
   ]);
-
-  const messagesData = messages[0].data;
-  const totalMessages = messages[0].total[0] ? messages[0].total[0].count : 0;
-  const hasMore = page * limit < totalMessages;
 
   res.status(OK).json(
     new ApiResponse(OK, "Get all messages of chat success", {
-      messages: messagesData,
-      totalMessages,
-      hasMore,
+      messages,
+      hasMore: messages.length === limit,
     })
   );
 });

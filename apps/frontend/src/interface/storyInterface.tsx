@@ -39,7 +39,6 @@ export interface BaseStory {
 }
 
 export interface FriendStory extends BaseStory{
-  userId: never;
   user: IUserShort,
   hasViewed: boolean;
   reactions: ReactionType[]; //i am not using this but can be used to show my reactions on friends story

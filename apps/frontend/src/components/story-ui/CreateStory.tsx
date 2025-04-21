@@ -20,6 +20,8 @@ import { toast } from 'sonner';
 import MyButton from '../MyButton';
 import AudioAnimation from './AudioAnimation';
 import ManageStoryPrivacy from './ManageStoryPrivacy';
+import { useSocket } from '@/context/socketContext';
+import { SOCKET_EVENTS } from '@/utils/constants';
 
 type TabType = "text" | "media";
 type MediaStoryType = "image" | "video" | "audio";
@@ -65,6 +67,8 @@ const CreateStoryModal = () => {
 
   const dispatch = useAppDispatch();
   const {storyPrivacy} = useAppSelector(state => state.privacy);
+
+  const {socket} = useSocket();
 
   const generateRandomColor = (): string => {
     const r = Math.floor(Math.random() * 256); // 0-255
@@ -243,6 +247,11 @@ const CreateStoryModal = () => {
       const { data } = await instance.post<ResponseWithData<MyStory>>("/story/create", requestBody);
       dispatch(appendToMyStories(data.data));
       toast.success("Story created successfully");
+      if(socket){
+        socket.emit(SOCKET_EVENTS.I_CREATE_STORY, {
+          story: data.data,
+        })
+      }
     } catch (error) {
       if (error instanceof AxiosError && error.response) {
         toast.error(error.response.data.message);

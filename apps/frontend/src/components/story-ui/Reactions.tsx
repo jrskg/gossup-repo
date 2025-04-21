@@ -1,9 +1,10 @@
-import { useAppDispatch } from "@/hooks/hooks";
+import { useSocket } from "@/context/socketContext";
+import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { ReactionType } from "@/interface/storyInterface";
 import { cn } from "@/lib/utils";
 import { updateStoryViewAndReaction } from "@/redux/slices/story";
 import instance from "@/utils/axiosInstance";
-import { EMOJI_MAPPING } from "@/utils/constants";
+import { EMOJI_MAPPING, SOCKET_EVENTS } from "@/utils/constants";
 import { AxiosError } from "axios";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ import { toast } from "sonner";
 interface Props {
   reactions?: ReactionType[];
   storyId: string;
+  storyOwnerId: string;
   className?: string;
   friendId: string
 }
@@ -19,11 +21,15 @@ const Reactions: React.FC<Props> = ({
   reactions = Object.keys(EMOJI_MAPPING) as ReactionType[],
   storyId,
   className,
-  friendId
+  friendId,
+  storyOwnerId
 }) => {
   const [userReactions, setUserReactions] = useState<ReactionType[]>([]);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dispatch = useAppDispatch();
+  const {user} = useAppSelector(state => state.user);
+
+  const {socket} = useSocket();
 
   const handleReact = (reaction: ReactionType) => {
     const updatedUserReactions = [...userReactions, reaction].slice(-5);
@@ -37,6 +43,14 @@ const Reactions: React.FC<Props> = ({
           storyId,
           reactions: updatedUserReactions
         }));
+        if(socket){
+          socket.emit(SOCKET_EVENTS.REACTED_ON_FRIEND_STORY, {
+            reactions: updatedUserReactions,
+            storyId,
+            storyOwnerId: storyOwnerId,
+            userId: user?._id!
+          });
+        }
       } catch (error) {
         if(error instanceof AxiosError && error.response){
           toast.error(error.response.data.message);

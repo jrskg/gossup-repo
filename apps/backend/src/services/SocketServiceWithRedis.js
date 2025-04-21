@@ -9,6 +9,7 @@ import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../configs/env.index.js";
 import { pub, sub } from "../configs/redis.js";
 import { produceMessageAndUpdates } from "../configs/kafka.js";
+import { Friendship, User } from "@gossup/db-models";
 
 const REDIS_SOCKET_EVENT_CHANNEL = "redis_socket_event_channel";
 
@@ -73,6 +74,44 @@ class SocketService {
                 }
               );
               break;
+
+            //for story events
+            case SOCKET_EVENTS_SERVER.I_CREATE_STORY:
+              const friendIds = data.friendIds;
+              if (!friendIds || !friendIds.length) return;
+              friendIds.forEach((friendId) => {
+                const sockets = this.userSocketMap.get(friendId) || [];
+                sockets.forEach(s => {
+                  s.emit(SOCKET_EVENTS_SERVER.FRIEND_CREATE_STORY, data.payload);
+                })
+              });
+              break;
+
+            case SOCKET_EVENTS_SERVER.SEEN_FRIEND_STORY:
+              const sockets = this.userSocketMap.get(data.payload.storyOwnerId) || [];
+              sockets.forEach((s) => {
+                s.emit(SOCKET_EVENTS_SERVER.SEEN_FRIEND_STORY, data.payload);
+              });
+              break;
+
+            case SOCKET_EVENTS_SERVER.REACTED_ON_FRIEND_STORY:
+              const sockets2 = this.userSocketMap.get(data.payload.storyOwnerId) || [];
+              sockets2.forEach((s) => {
+                s.emit(SOCKET_EVENTS_SERVER.REACTED_ON_FRIEND_STORY, data.payload);
+              });
+              break;
+
+            case SOCKET_EVENTS_SERVER.DELETED_MY_STORY:
+              const friendIds2 = data.friendIds;
+              console.log("FriendIds", friendIds2);
+              if (!friendIds2 || !friendIds2.length) return;
+              friendIds2.forEach((friendId) => {
+                const sockets = this.userSocketMap.get(friendId) || [];
+                sockets.forEach(s => {
+                  s.emit(SOCKET_EVENTS_SERVER.FRIEND_DELETED_STORY, data.payload);
+                })
+              });
+              break;
             default:
               console.warn("Unhandled redis error.", data.event);
           }
@@ -116,6 +155,28 @@ class SocketService {
         });
       }
     });
+  }
+
+  async getFriendsId(userId) {
+    const query = {
+      $or: [{ userOneId: userId }, { userTwoId: userId }],
+      status: "accepted",
+    };
+
+    const friends = await Friendship.find(query, {
+      userOneId: 1,
+      userTwoId: 1,
+    })
+      .lean()
+      .catch(() => []);
+
+    if (!friends.length) {
+      return [];
+    }
+
+    return friends.map((f) =>
+      f.userOneId.toString() === userId.toString() ? f.userTwoId : f.userOneId
+    ); //ObjectId[]
   }
   initializeListeners() {
     console.log("Socket listeners initialized");
@@ -273,6 +334,62 @@ class SocketService {
           })
         );
       });
+
+      socket.on(SOCKET_EVENTS_SERVER.I_CREATE_STORY, async (payload) => {
+        const { story } = payload;
+        const user = await User.findById(socket.user._id)
+          .select("_id name profilePic")
+          .lean();
+
+        const friendIds = await this.getFriendsId(user._id);
+        if(!friendIds.length) return;
+
+        pub.publish(
+          REDIS_SOCKET_EVENT_CHANNEL,
+          JSON.stringify({
+            event: SOCKET_EVENTS_SERVER.I_CREATE_STORY,
+            payload: { story, user },
+            friendIds,
+          })
+        );
+      });
+
+      socket.on(SOCKET_EVENTS_SERVER.SEEN_FRIEND_STORY, (payload) => {
+        // const { storyId, storyView, storyOwnerId } = payload;
+        pub.publish(
+          REDIS_SOCKET_EVENT_CHANNEL,
+          JSON.stringify({
+            event: SOCKET_EVENTS_SERVER.SEEN_FRIEND_STORY,
+            payload,
+          })
+        )
+      });
+
+      socket.on(SOCKET_EVENTS_SERVER.REACTED_ON_FRIEND_STORY, (payload) => {
+        // const { storyId, reactions, userId, storyOwnerId } = payload;
+        pub.publish(
+          REDIS_SOCKET_EVENT_CHANNEL,
+          JSON.stringify({
+            event: SOCKET_EVENTS_SERVER.REACTED_ON_FRIEND_STORY,
+            payload,
+          })
+        )
+      });
+
+      socket.on(SOCKET_EVENTS_SERVER.DELETED_MY_STORY, async(payload) => {
+        // const { storyId, storyOwnerId } = payload;
+        const friendsId = await this.getFriendsId(payload.storyOwnerId);
+        if(!friendsId.length) return;
+
+        pub.publish(
+          REDIS_SOCKET_EVENT_CHANNEL,
+          JSON.stringify({
+            event: SOCKET_EVENTS_SERVER.DELETED_MY_STORY,
+            payload,
+            friendIds: friendsId,
+          })
+        )
+      })
 
       socket.on("error", (err) => {
         console.error(err);
