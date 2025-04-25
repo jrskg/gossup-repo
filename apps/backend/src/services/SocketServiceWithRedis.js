@@ -112,6 +112,22 @@ class SocketService {
                 })
               });
               break;
+
+            //for call events
+            case SOCKET_EVENTS_SERVER.CALL_MADE:
+            case SOCKET_EVENTS_SERVER.CALL_ACCEPTED:
+            case SOCKET_EVENTS_SERVER.ICE_CANDIDATE:
+            case SOCKET_EVENTS_SERVER.CALL_ENDED:
+              const callSockets = this.userSocketMap.get(data.payload.receiverId) || [];
+              // callSockets.forEach((s) => {
+              //   s.emit(data.event, data.payload);
+              // });
+              //just send to one socket of a user
+              console.log("emmitting event", data.event, data.payload);
+              if(callSockets.length){
+                callSockets[0].emit(data.event, data.payload);
+              }
+              break;
             default:
               console.warn("Unhandled redis error.", data.event);
           }
@@ -183,6 +199,7 @@ class SocketService {
     const io = this.io;
     io.on("connection", (socket) => {
       console.info("a user connected", socket.id, socket.user.name);
+      
       socket.on(SOCKET_EVENTS_SERVER.JOIN_ROOM, (payload) => {
         const { currRoomId, prevRoomId } = payload;
         if (prevRoomId) {
@@ -389,7 +406,28 @@ class SocketService {
             friendIds: friendsId,
           })
         )
-      })
+      });
+
+      //doing like this because for alli just need to publish to redis
+      const CALL_EVENTS = [
+        SOCKET_EVENTS_SERVER.CALL_MADE,
+        SOCKET_EVENTS_SERVER.CALL_ACCEPTED,
+        SOCKET_EVENTS_SERVER.ICE_CANDIDATE,
+        SOCKET_EVENTS_SERVER.CALL_ENDED,
+      ];
+      CALL_EVENTS.forEach((event) => {
+        socket.on(event, (payload) => {
+          console.log("Listening to event", event, payload);
+
+          pub.publish(
+            REDIS_SOCKET_EVENT_CHANNEL,
+            JSON.stringify({
+              event,
+              payload,
+            })
+          );
+        });
+      });
 
       socket.on("error", (err) => {
         console.error(err);

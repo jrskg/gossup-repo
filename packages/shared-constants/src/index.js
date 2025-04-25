@@ -52,6 +52,11 @@ export const SOCKET_EVENTS_SERVER = {
   DELETED_MY_STORY: "deleted_my_story",
   FRIEND_DELETED_STORY: "friend_deleted_story",
   
+  CALL_MADE: "call_made",
+  CALL_ACCEPTED: "call_accepted",
+  ICE_CANDIDATE: "ice_candidate",
+  CALL_ENDED: "call_ended",
+  
   USER_ONLINE: "user_online",
   USER_OFFLINE: "user_offline",
   USER_JOINED: "user_joined",

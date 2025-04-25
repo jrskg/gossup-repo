@@ -2,6 +2,7 @@ import {SOCKET_EVENTS} from "../utils/constants";
 import type { DeliveryStatus, IChat, IMessage } from "./chatInterface";
 import { IUserShort } from "./interface";
 import { MyStory, ReactionType, StoryView } from "./storyInterface";
+import { CallType } from "./webRtcInterface";
 
 export interface IMessageStatusUpdatePayload {
   roomId: string;
@@ -51,6 +52,8 @@ export type SocketEventMap = {
     participants: string[]
   }) => void;
 
+
+
   [SOCKET_EVENTS.I_CREATE_STORY]: (payload:{
     story: MyStory,
   }) => void;
@@ -77,4 +80,35 @@ export type SocketEventMap = {
     storyId: string,
     storyOwnerId: string,
   }) => void;
+
+
+  [SOCKET_EVENTS.CALL_MADE]: (payload:{
+    from: IUserShort,
+    to: IUserShort,
+    offer: RTCSessionDescriptionInit,
+    callType: CallType,
+    receiverId: string,
+  }) => void;
+
+  [SOCKET_EVENTS.CALL_ACCEPTED]: (payload:{
+    from: IUserShort,
+    to: IUserShort,
+    answer: RTCSessionDescriptionInit,
+    callType: CallType,
+    receiverId: string,
+  }) => void;
+
+  [SOCKET_EVENTS.ICE_CANDIDATE]: (payload:{
+    from: string,
+    to: string,
+    receiverId: string,
+    candidate: RTCIceCandidateInit,
+  }) => void;
+
+  [SOCKET_EVENTS.CALL_ENDED]: (payload:{
+    from: string,
+    to: string,
+    receiverId: string,
+  }) => void;
+
 }

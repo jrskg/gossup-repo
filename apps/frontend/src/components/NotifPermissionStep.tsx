@@ -1,4 +1,4 @@
-import { generateFCMToken } from "@/notifications/firebase"
+import { generateFCMToken } from "@/services/firebase"
 import MyButton from "./MyButton"
 import { useState } from "react";
 import { useAppDispatch, useInitialSetup } from "@/hooks/hooks";

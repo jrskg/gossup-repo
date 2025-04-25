@@ -10,10 +10,11 @@ import VerificationRoute from './components/VerificationRoute';
 import { useAppSelector } from './hooks/hooks';
 import { useGlobalSocketListeners } from './hooks/useGlobalSocketListeners';
 import { useAuthActions } from './hooks/userHooks';
-import { messaging } from './notifications/firebase';
+import { messaging } from './services/firebase';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Call from './components/call-ui/Call';
 
 const Profile = React.lazy(() => import('./pages/Profile'));
 const Notifications = React.lazy(() => import('./pages/Notifications'));
@@ -53,12 +54,14 @@ function App() {
 
   return (
     <>
+      {user && <Call
+        user={user}
+      />}
       {isAuthenticated && <SideNavigation />}
       <Routes>
         <Route path="/login" element={<Login auhtLoading={loading} />} />
         <Route path="/signup" element={<Signup />} />
         <Route path='/forget-password' element={<Suspense fallback={<TopLoader />}><ForgetPassword /></Suspense>} />
-
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Home
             user={user} 

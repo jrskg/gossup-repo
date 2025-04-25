@@ -20,7 +20,7 @@ const SideNavigation: React.FC = () => {
     await logout("web");
   }
   return (
-    <div className="flex md:rounded-xl items-center justify-between w-screen h-[90px] fixed bottom-0 md:top-[50%] md:transform md:-translate-y-1/2 md:left-2 md:flex-col md:w-[90px] bg-[#192531] md:h-[95%] md:py-12 dark:bg-mixed-1 z-50">
+    <div className="flex md:rounded-xl items-center justify-between w-screen h-[90px] fixed bottom-0 md:top-[50%] md:transform md:-translate-y-1/2 md:left-2 md:flex-col md:w-[90px] bg-[#192531] md:h-[95%] md:py-12 dark:bg-mixed-1 z-40">
       <p className="hidden md:block font-bold text-primary-1">GOSS_UP</p>
       <div className="flex justify-around w-full items-center md:flex-col md:w-[unset]">
         <NavigationTab

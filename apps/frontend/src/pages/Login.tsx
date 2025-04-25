@@ -4,7 +4,7 @@ import { useAppSelector } from '@/hooks/hooks';
 import { useAuthActions } from '@/hooks/userHooks';
 import { LoginParams } from '@/interface/interface';
 import LoginSignup from '@/layouts/LoginSignup';
-import { generateFCMToken } from '@/notifications/firebase';
+import { generateFCMToken } from '@/services/firebase';
 import { validateEmail, validatePassword } from '@/utils/validation';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';

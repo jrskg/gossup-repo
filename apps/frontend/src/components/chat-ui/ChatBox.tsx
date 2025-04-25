@@ -4,13 +4,24 @@ import { useChatBoxLogic } from '@/hooks/useChatBoxLogic'
 import { cn } from '@/lib/utils'
 import { setIsDetailsOn } from '@/redux/slices/selectedChat'
 import { AvatarImage } from '@radix-ui/react-avatar'
-import { MessageCircleMoreIcon, SendHorizonalIcon, XIcon } from 'lucide-react'
+import { MessageCircleMoreIcon, Phone, SendHorizonalIcon, Video, XIcon } from 'lucide-react'
 import React, { memo, useContext } from 'react'
 import { Avatar } from '../ui/avatar'
 import { Textarea } from '../ui/textarea'
 import MessageContainer from './MessageContainer'
 import AddAttachments from './AddAttachments'
 import SendAttachments from './SendAttachments'
+import { useWebRTC } from '@/context/WebRTCContext'
+import { IUserShort } from '@/interface/interface'
+
+
+const getFriendId = (participants: string[], userId: string) => {
+  const friendId = participants.find((id) => id !== userId);
+  if (!friendId) {
+    throw new Error("Friend ID not found");
+  }
+  return friendId;
+}
 
 interface ChatBoxProps {
   className?: string;
@@ -30,6 +41,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({
     dispatch,
     handleInputMessageChange
   } = useChatBoxLogic(selectedChat, userId, userName);
+
+  const {callUser} = useWebRTC();
 
   const handleCloseChat = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     e.stopPropagation();
@@ -60,6 +73,32 @@ const ChatBox: React.FC<ChatBoxProps> = ({
             <div>
               <p className='text-xl font-bold leading-none'>{getChatName(selectedChat)}</p>
               {/* <p className='text-sm'>Status</p> */}
+            </div>
+            <div className='flex items-center gap-3 ml-auto'>
+              <Phone
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const userWithBio = participants[getFriendId(selectedChat.participants, userId)];
+                  const user:IUserShort = {
+                    _id: userWithBio._id,
+                    name: userWithBio.name,
+                    profilePic: userWithBio.profilePic,
+                  }
+                  callUser(user, "audio");
+                }}
+                className='w-6 h-6 text-primary-5 dark:text-dark-1' />
+              <Video
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const userWithBio = participants[getFriendId(selectedChat.participants, userId)];
+                  const user:IUserShort = {
+                    _id: userWithBio._id,
+                    name: userWithBio.name,
+                    profilePic: userWithBio.profilePic,
+                  }
+                  callUser(user, "video");
+                }}
+                className='w-6 h-6 text-primary-5 dark:text-dark-1' />
             </div>
             <XIcon onClick={handleCloseChat} className='absolute right-3 w-6 h-6 cursor-pointer md:hidden ' />
           </div>
