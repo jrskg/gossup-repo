@@ -6,6 +6,7 @@ import {User} from "./models/user.model.js";
 import {Story} from "./models/story.model.js";
 import {StoryView} from "./models/storyView.model.js";
 import {UserPrivacy} from "./models/privacy.model.js";
+import {Call} from "./models/call.model.js";
 
 export {
   Chat,
@@ -15,5 +16,6 @@ export {
   User,
   Story,
   StoryView,
-  UserPrivacy
+  UserPrivacy,
+  Call
 };

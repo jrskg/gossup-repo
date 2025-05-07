@@ -1,12 +1,17 @@
 import { useWebRTC } from '@/context/WebRTCContext';
+import { useCallTimeOut } from '@/hooks/callHooks';
 import { IUser } from '@/interface/interface';
 import { cn } from '@/lib/utils';
 import clsx from "clsx";
 import { Maximize, Mic, MicOff, Minimize2, Phone, Video, VideoOff } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import defaultAvatar from "../../assets/defaultAvatar.jpg";
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import AudioWave from './AudioWave';
+import CallAvatar from './CallAvatar';
+import CallDuration, { CallDurationRef } from './CallDuration';
+import CallStateStatus from './CallStateStatus';
 import DraggableBox from './Dragable';
 import IncomingCall from './IncomingCall';
 
@@ -41,6 +46,8 @@ const Call: React.FC<CallProps> = ({ user }) => {
   const draggableRemoteVideoRef = useRef<HTMLVideoElement>(null);
   const draggableRemoteAudioRef = useRef<HTMLAudioElement>(null);
 
+  const callDurationRef = useRef<CallDurationRef>(null);
+
   const {
     answerCall,
     callType,
@@ -48,25 +55,44 @@ const Call: React.FC<CallProps> = ({ user }) => {
     callStatus,
     incomingCall,
     localStream,
-    remoteStream
+    remoteStream,
+    targetUser,
+    isRinging,
+    onRejectCall,
+    setCallStatus,
+    callUser,
+    resetCalledUserState,
+    missedCall
   } = useWebRTC();
 
-  useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      console.log("Setting local video stream");
-      localVideoRef.current.srcObject = localStream;
-    }
-  }, [localStream]);
+  const onCallTimeOut = useCallback(()=>{
+    missedCall(true);
+  }, [missedCall])
+
+  useCallTimeOut(10, callStatus, onCallTimeOut);
 
   useEffect(() => {
+    if (!localStream) return;
+    if (callType === "video" && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream, callType]);
+
+  useEffect(() => {
+    if (!remoteStream) return;
     if (callType === "video") {
-      if (remoteVideoRef.current && draggableRemoteVideoRef.current && remoteStream) {
+      if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStream;
+      }
+
+      if (draggableRemoteVideoRef.current) {
         draggableRemoteVideoRef.current.srcObject = remoteStream;
       }
     } else {
-      if (remoteAudioRef.current && draggableRemoteAudioRef.current && remoteStream) {
+      if (remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = remoteStream;
+      }
+      if (draggableRemoteAudioRef.current) {
         draggableRemoteAudioRef.current.srcObject = remoteStream;
       }
     }
@@ -91,28 +117,63 @@ const Call: React.FC<CallProps> = ({ user }) => {
     })
   }
 
-  if (!callStatus || callStatus === "ended") {
+  const callAgain = useCallback(() => {
+    if(targetUser && callType){
+      callUser(targetUser, callType);
+    }
+    else{
+      toast.error("Something went wrong, try again later");
+    }
+  }, [callUser, callType, targetUser])
+
+  if (callStatus === "idle") {
     return null;
   }
-  if (callStatus === "calling") {
-    return (
-      <div className={cn(
-        "fixed inset-0 bg-primary-6 dark:bg-gray-900 flex flex-col z-[100]",
-        "transition-opacity duration-300 ease-in-out",
-        isMinimized ? "opacity-0 pointer-events-none" : "opacity-100"
-      )}>
-        <h1>Calling</h1>
-      </div>
-    )
+  else if(callStatus === "ended"){
+    return <CallStateStatus
+      onCallAgain={callAgain}
+      onClose={resetCalledUserState}
+      status='ended'
+      userName={targetUser?.name || ""}
+      avatar={targetUser?.profilePic?.avatar}
+      duration={callDurationRef.current?.display || ""}
+      endedAt={new Date().toLocaleDateString()}
+    />
   }
-
-  if (incomingCall && callStatus === "incoming-ringing") {
+  else if(callStatus === "rejected"){
+    return <CallStateStatus
+      onCallAgain={callAgain}
+      onClose={resetCalledUserState}
+      status='rejected'
+      userName={targetUser?.name || ""}
+      avatar={targetUser?.profilePic?.avatar}
+    />
+  }
+  else if(callStatus === "busy"){
+    return <CallStateStatus
+      onCallAgain={callAgain}
+      onClose={resetCalledUserState}
+      status='busy'
+      userName={targetUser?.name || ""}
+      avatar={targetUser?.profilePic?.avatar}
+    />
+  }
+  else if (callStatus === "missed"){
+    return <CallStateStatus
+      onCallAgain={callAgain}
+      onClose={resetCalledUserState}
+      status='missed'
+      userName={targetUser?.name || ""}
+      avatar={targetUser?.profilePic?.avatar}
+    />
+  }
+  else if (incomingCall && callStatus === "incoming-ringing") {
     return (
       <IncomingCall
         callType={incomingCall.callType}
         userName={incomingCall.from.name}
         userAvatar={incomingCall.from.profilePic?.avatar}
-        onReject={endCall}
+        onReject={onRejectCall}
         onAccept={answerCall}
       />
     )
@@ -149,26 +210,48 @@ const Call: React.FC<CallProps> = ({ user }) => {
         </DraggableBox>
 
         <div className="flex-1 relative">
-          {callType === 'video' ? (
-            <video
-              ref={remoteVideoRef}
-              autoPlay
-              playsInline
-              className="w-full h-full object-contain"
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <audio
-                ref={remoteAudioRef}
-                autoPlay
-                playsInline
-                className="hidden"
-              />
-              {!isMinimized && <AudioWave
-                stream={remoteStream}
-              />}
-            </div>
-          )}
+          {
+            callStatus === "calling" && !isMinimized && (
+              <div className="flex flex-col items-center justify-center h-full space-y-4">
+                <CallAvatar
+                  avatar={targetUser?.profilePic?.avatar}
+                />
+
+                <div className="text-center">
+                  <h2 className="text-lg font-semibold">{targetUser?.name}</h2>
+                  <p className="text-lg mt-1 font-bold">{callStatus}</p>
+                </div>
+                <p className="text-lg text-success">{isRinging ? "Ringing..." : "Calling..."}</p>
+              </div>
+            )
+          }
+          {
+            callStatus === "connected" && (
+              callType === 'video' ? (
+                <video
+                  ref={remoteVideoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <audio
+                    ref={remoteAudioRef}
+                    autoPlay
+                    playsInline
+                    className="hidden"
+                  />
+                  {!isMinimized && <AudioWave
+                    stream={remoteStream}
+                    userIcon={targetUser?.profilePic?.avatar}
+                  />}
+                  <p className='text-lg font-bold mt-10'>{targetUser?.name}</p>
+                  <CallDuration ref={callDurationRef}/>
+                </div>
+              )
+            )
+          }
         </div>
 
         {!isMinimized && <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-4 md:gap-6">
@@ -209,7 +292,7 @@ const Call: React.FC<CallProps> = ({ user }) => {
           )}
 
           <button
-            onClick={endCall}
+            onClick={() => endCall(true, callStatus !== "connected")}
             className="p-4 rounded-full bg-red-500 hover:bg-red-600 shadow-lg transition-all"
           >
             <Phone className="w-6 h-6 text-white" />
@@ -231,26 +314,37 @@ const Call: React.FC<CallProps> = ({ user }) => {
         />
         {/* <button onClick={() => setOpen(true)}>call</button> */}
         <div className="flex-1 relative">
-          {callType === 'video' ? (
-            <video
-              ref={draggableRemoteVideoRef}
-              autoPlay
-              playsInline
-              className="w-full h-full object-contain"
+          {callStatus === "calling" && isMinimized && (
+           <div className='flex items-center justify-center'>
+             <CallAvatar
+              avatar={targetUser?.profilePic?.avatar}
+              className='w-28 h-28 md:w-44 md:h-44'
             />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <audio
-                ref={draggableRemoteAudioRef}
+           </div>
+          )}
+          {callStatus === "connected" && (
+            callType === 'video' ? (
+              <video
+                ref={draggableRemoteVideoRef}
                 autoPlay
                 playsInline
-                className="hidden"
+                className="w-full h-full object-contain"
               />
-              <AudioWave
-                className='w-16 h-16'
-                stream={remoteStream}
-              />
-            </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <audio
+                  ref={draggableRemoteAudioRef}
+                  autoPlay
+                  playsInline
+                  className="hidden"
+                />
+                <AudioWave
+                  className='w-16 h-16'
+                  stream={remoteStream}
+                  userIcon={targetUser?.profilePic?.avatar}
+                />
+              </div>
+            )
           )}
         </div>
       </DraggableBox>

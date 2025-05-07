@@ -118,12 +118,15 @@ class SocketService {
             case SOCKET_EVENTS_SERVER.CALL_ACCEPTED:
             case SOCKET_EVENTS_SERVER.ICE_CANDIDATE:
             case SOCKET_EVENTS_SERVER.CALL_ENDED:
+            case SOCKET_EVENTS_SERVER.CALL_REJECTED:
+            case SOCKET_EVENTS_SERVER.CALL_RINGING:
+            case SOCKET_EVENTS_SERVER.USER_BUSY:
+            case SOCKET_EVENTS_SERVER.MISSED_CALL:
               const callSockets = this.userSocketMap.get(data.payload.receiverId) || [];
               // callSockets.forEach((s) => {
               //   s.emit(data.event, data.payload);
               // });
               //just send to one socket of a user
-              console.log("emmitting event", data.event, data.payload);
               if(callSockets.length){
                 callSockets[0].emit(data.event, data.payload);
               }
@@ -414,11 +417,13 @@ class SocketService {
         SOCKET_EVENTS_SERVER.CALL_ACCEPTED,
         SOCKET_EVENTS_SERVER.ICE_CANDIDATE,
         SOCKET_EVENTS_SERVER.CALL_ENDED,
+        SOCKET_EVENTS_SERVER.CALL_REJECTED,
+        SOCKET_EVENTS_SERVER.CALL_RINGING,
+        SOCKET_EVENTS_SERVER.USER_BUSY,
+        SOCKET_EVENTS_SERVER.MISSED_CALL,
       ];
       CALL_EVENTS.forEach((event) => {
         socket.on(event, (payload) => {
-          console.log("Listening to event", event, payload);
-
           pub.publish(
             REDIS_SOCKET_EVENT_CHANNEL,
             JSON.stringify({

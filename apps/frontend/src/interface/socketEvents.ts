@@ -13,14 +13,14 @@ export interface IMessageStatusUpdatePayload {
 
 export type SocketEventMap = {
   [SOCKET_EVENTS.JOIN_ROOM]: (payload: { 
-    currRoomId: string, 
-    prevRoomId: string | null,
+    currRoomId: string; 
+    prevRoomId: string | null;
   }) => void;
   [SOCKET_EVENTS.LEAVE_ROOM]: (payload: { roomId: string }) => void;
   [SOCKET_EVENTS.SEND_MESSAGE]: (payload:{
-    roomId: string, 
-    message: IMessage, 
-    senderId: string, 
+    roomId: string; 
+    message: IMessage; 
+    senderId: string; 
     participants: string[]
   }) => void;
   [SOCKET_EVENTS.NEW_MESSAGE]: (payload:{roomId: string, message: IMessage}) => void;
@@ -111,4 +111,37 @@ export type SocketEventMap = {
     receiverId: string,
   }) => void;
 
+  [SOCKET_EVENTS.CALL_REJECTED]: (payload:{
+    from: string,
+    to: string,
+    receiverId: string,
+  }) => void;
+
+  [SOCKET_EVENTS.CALL_RINGING]: (payload:{
+    from: string,
+    to: string,
+    receiverId: string,
+  }) => void;
+
+  [SOCKET_EVENTS.USER_BUSY]: (payload:{
+    from: string,
+    to: string,
+    receiverId: string,
+  }) => void;
+
+  [SOCKET_EVENTS.MISSED_CALL]: (payload:{
+    from: string,
+    to: string,
+    receiverId: string,
+    callInfo: {
+      caller: string;
+      callee: string;
+      callType: CallType;
+      status: "missed"|"rejected"|"connected";
+      connectedAt?: string;
+      duration?: number;
+      createdAt: string;
+      updatedAt: string;
+    }
+  }) => void;
 }

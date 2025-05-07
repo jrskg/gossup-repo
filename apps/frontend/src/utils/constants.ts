@@ -48,6 +48,10 @@ export const SOCKET_EVENTS = {
   CALL_ACCEPTED: "call_accepted",
   ICE_CANDIDATE: "ice_candidate",
   CALL_ENDED: "call_ended",
+  CALL_REJECTED: "call_rejected",
+  CALL_RINGING: "call_ringing",
+  USER_BUSY: "user_busy",
+  MISSED_CALL: "missed_call",
 
   USER_ONLINE: "user_online",
   USER_OFFLINE: "user_offline",

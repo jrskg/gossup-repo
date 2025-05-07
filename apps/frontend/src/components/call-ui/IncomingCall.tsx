@@ -1,11 +1,10 @@
 import { CallType } from '@/interface/webRtcInterface';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Mic, Phone, PhoneOff, Video } from 'lucide-react';
-import defaultAvatar from '../../assets/defaultAvatar.jpg';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog';
-
-{/* <div className="fixed inset-0 bg-black/50 dark:bg-gray-900/75 backdrop-blur-sm z-50 flex items-center justify-center p-4"> */ }
+import CallAvatar from './CallAvatar';
+import { useEffect, useRef } from 'react';
+import incomingRingtone from "../../assets/incomingRingtone.mp3"
 
 
 interface IncomingCallProps {
@@ -13,7 +12,7 @@ interface IncomingCallProps {
   userAvatar?: string;
   callType: CallType;
   onAccept: () => void;
-  onReject: () => void;
+  onReject: (isLocalReject?: boolean) => void;
 }
 
 const IncomingCall: React.FC<IncomingCallProps> = ({
@@ -23,6 +22,18 @@ const IncomingCall: React.FC<IncomingCallProps> = ({
   onAccept,
   onReject,
 }) => {
+
+  const incomingAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (incomingAudioRef.current) {
+        incomingAudioRef.current.pause();
+        incomingAudioRef.current.currentTime = 0;
+      }
+    }
+  }, [])
+  
   return (
     <Dialog
       open={true}
@@ -33,19 +44,17 @@ const IncomingCall: React.FC<IncomingCallProps> = ({
           <DialogDescription></DialogDescription>
         </VisuallyHidden>
         <div className="w-full max-w-md h-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 flex flex-col items-center justify-between gap-6">
-          {/* Avatar Section */}
-          <div className="relative">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
-              <Avatar className="w-full h-full select-none pointer-events-none">
-                <AvatarImage className='object-cover' src={userAvatar ? userAvatar : defaultAvatar} />
-                <AvatarFallback>U</AvatarFallback>
-              </Avatar>
-              {/* Ringing animation */}
-              <div className="absolute inset-0 border-4 border-blue-500/30 rounded-full animate-call-pulse" />
-            </div>
-          </div>
-
-          {/* User Info */}
+          <CallAvatar
+            avatar={userAvatar}
+          />
+          <audio
+            ref={incomingAudioRef}
+            src={incomingRingtone} 
+            loop
+            autoPlay
+            playsInline
+            className='hidden'
+          />
           <div className="text-center">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
               {userName}
@@ -65,7 +74,6 @@ const IncomingCall: React.FC<IncomingCallProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="w-full flex flex-col gap-4 mt-4">
             <button
               onClick={onAccept}
@@ -76,7 +84,7 @@ const IncomingCall: React.FC<IncomingCallProps> = ({
             </button>
 
             <button
-              onClick={onReject}
+              onClick={() =>  onReject(true)}
               className="w-full flex items-center justify-center gap-3 px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors"
             >
               <PhoneOff className="w-6 h-6" />

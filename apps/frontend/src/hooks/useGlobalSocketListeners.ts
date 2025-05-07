@@ -21,6 +21,9 @@ import { addToChatState } from "@/redux/slices/chats";
 import { FriendStory } from "@/interface/storyInterface";
 import { addReactionToMyStory, addToFriendStories, deleteFromFriendStories, updateMyStoriesViews } from "@/redux/slices/story";
 import { useGetStory } from "./useStory";
+import { playSound } from "@/utils/audio";
+import chinSound from "../assets/chinSound.mp3"
+import messageAlert from "../assets/messageAlert.wav"
 
 export const useGlobalSocketListeners = (
   selectedChat: IChat | null,
@@ -91,15 +94,18 @@ export const useGlobalSocketListeners = (
           dispatch(addToNewMessages({ chatId: roomId, message }));
           emitStatusUpdate(message, "delivered", roomId);
         }
+        playSound(chinSound);
       }
       else if (!selectedChat || roomId !== selectedChat._id) {
-        toast.success("New message received");
+        // toast.success("New message received");
         dispatch(addToNewMessages({ chatId: roomId, message }));
         emitStatusUpdate(message, "delivered", roomId);
+        playSound(chinSound);
       } else {
         dispatch(transferNewToSeen(roomId));
         dispatch(addToSeenMessages({ chatId: roomId, message }));
         emitStatusUpdate(message, "seen", roomId);
+        playSound(messageAlert);
       }
     });
 

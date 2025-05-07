@@ -56,6 +56,10 @@ export const SOCKET_EVENTS_SERVER = {
   CALL_ACCEPTED: "call_accepted",
   ICE_CANDIDATE: "ice_candidate",
   CALL_ENDED: "call_ended",
+  CALL_REJECTED: "call_rejected",
+  CALL_RINGING: "call_ringing",
+  USER_BUSY: "user_busy",
+  MISSED_CALL: "missed_call",
   
   USER_ONLINE: "user_online",
   USER_OFFLINE: "user_offline",
@@ -66,3 +70,5 @@ export const SOCKET_EVENTS_SERVER = {
 export const STORY_TYPES = ['text', 'image', 'video', 'audio'];
 export const STORY_VISIBILITY = ['all', 'only', 'except'];
 export const EMOJI_TYPE = ["like", "love", "haha", "wow", "sad", "angry", "care"];
+export const CALL_STATUS_MODEL = ["missed", "connected", "rejected"];
+export const CALL_TYPE_MODEL = ["audio", "video"];
