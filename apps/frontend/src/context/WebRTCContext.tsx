@@ -1,13 +1,30 @@
-import { useAppSelector } from "@/hooks/hooks";
-import { IUserShort } from "@/interface/interface";
+import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
+import { IUserShort, ResponseWithData } from "@/interface/interface";
 import { CallStatus, CallType, IncomingCall, WebRTCContextType } from "@/interface/webRtcInterface";
 import { closePeerConnection, createPeerConnection, getLocalStream, getPeer } from "@/services/webRtc";
 import { SOCKET_EVENTS } from "@/utils/constants";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSocket } from "./socketContext";
+import { CallStatusDB, ICall } from "@/interface/callInterface";
+import instance from "@/utils/axiosInstance";
+import { AxiosError } from "axios";
+import { addCall, updateCall } from "@/redux/slices/call";
 
 export const WebRTCContext = createContext<WebRTCContextType | null>(null);
+
+interface Case1 {
+  call: ICall,
+  isUpdate: true
+}
+
+interface Case2 {
+  call: ICall,
+  isUpdate: false,
+  otherUser: IUserShort
+}
+
+type CallLog = Case1 | Case2
 
 export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
@@ -20,10 +37,29 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [targetUserState, setTargetUserState] = useState<IUserShort | null>(null);
 
+  const callLogRef = useRef<ICall | null>(null);
   const targetUser = useRef<IUserShort | null>(null);
 
   const { socket } = useSocket();
   const { user: loggedInUser } = useAppSelector(state => state.user);
+  const dispatch = useAppDispatch();
+
+  const addOrUpdateCallLog = useCallback((logParam: CallLog) => {
+    callLogRef.current = logParam.call
+    if (logParam.isUpdate) {
+      dispatch(updateCall(logParam.call))
+    } else {
+      dispatch(addCall({
+        call: logParam.call,
+        tabType: "all",
+        users: [logParam.otherUser, {
+          _id: loggedInUser?._id!,
+          name: loggedInUser?.name!,
+          profilePic: loggedInUser?.profilePic
+        }]
+      }))
+    }
+  }, [dispatch, loggedInUser]);
 
   const setupMedia = async (callType: CallType): Promise<MediaStream | null> => {
     try {
@@ -38,9 +74,25 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }
   const callUser = async (user: IUserShort, callType: CallType) => {
-    console.log("Calling user", user);
+    setCallStatus("calling");
+    targetUser.current = user;
+    setTargetUserState(user);
+    setCallType(callType);
+
     const lclStream = await setupMedia(callType);
-    if (!lclStream) return;
+    if (!lclStream) {
+      resetCalledUserState();
+      return
+    }
+
+    const call = await createCallOnDB(loggedInUser?._id!, user._id, callType);
+    if (!call) {
+      resetCalledUserState();
+      return
+    }
+    console.log(call)
+    addOrUpdateCallLog({ isUpdate: false, call, otherUser: user });
+
     const peer = createPeerConnection(handleTrack, handleIceCandidate);
     peer.getSenders().forEach(sender => peer.removeTrack(sender));
     lclStream.getTracks().forEach(track => {
@@ -60,12 +112,44 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         name: loggedInUser?.name!,
         profilePic: loggedInUser?.profilePic,
       },
+      callLog: call
     })
-    setCallStatus("calling");
-    targetUser.current = user;
-    setTargetUserState(user);
-    setCallType(callType);
   }
+
+  const createCallOnDB = async (caller: string, callee: string, callType: CallType): Promise<ICall | null> => {
+    try {
+      const { data } = await instance.post<ResponseWithData<ICall>>("/call/create", {
+        caller,
+        callee,
+        callType,
+      });
+      return data.data;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response) {
+        toast.error(error.response.data.message);
+      }
+      console.error(error);
+      return null;
+    }
+  }
+
+  const updateCallOnDB = useCallback(async (callId: string, status: CallStatusDB, connectedAt?: Date, endedAt?: Date): Promise<boolean> => {
+    const updateObj = {
+      status,
+      ...(connectedAt ? { connectedAt: connectedAt.toISOString() } : {}),
+      ...(endedAt ? { endedAt: endedAt.toISOString() } : {})
+    }
+    try {
+      await instance.put(`/call/${callId}`, updateObj);
+      return true
+    } catch (error) {
+      if (error instanceof AxiosError && error.response) {
+        toast.error(error.response.data.message);
+      }
+      console.error(error);
+      return false
+    }
+  }, [])
 
   const answerCall = async () => {
     if (!incomingCall) return;
@@ -98,12 +182,15 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     targetUser.current = incomingCall.from;
     setTargetUserState(incomingCall.from);
     setIncomingCall(null);
+    await updateCallOnDB(callLogRef.current?._id!, "connected", new Date());
+    addOrUpdateCallLog({ isUpdate: true, call: { ...callLogRef.current!, status: "connected", connectedAt: new Date().toISOString() } });
   }
 
   const resetState = useCallback(() => {
     closePeerConnection(localStream);
     setIsRinging(false);
     setIncomingCall(null);
+    callLogRef.current = null;
 
     // setCallStatus("idle"); // handled separately
     // setCallType(undefined);
@@ -120,41 +207,32 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const missedCall = useCallback((isLocalMissed = true) => {
     if (isLocalMissed) {
+      const updatedCall: ICall = { ...callLogRef.current!, status: "missed" };
       socket?.emit(SOCKET_EVENTS.MISSED_CALL, {
         from: loggedInUser?._id!,
         to: targetUser.current?._id!,
         receiverId: targetUser.current?._id!,
-        callInfo:{
-          caller: loggedInUser?._id!,
-          callee: targetUser.current?._id!,
-          callType: callType!,
-          status: "missed",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }
-      })
+        callInfo: updatedCall
+      });
+      addOrUpdateCallLog({ isUpdate: true, call: updatedCall });
     }
     resetState();
     setCallStatus("missed");
   }, [socket, loggedInUser, callType, resetState])
 
-  const endCall = useCallback((isLocalEnd = true, beforeConnected = true) => {
+  const endCall = useCallback(async (isLocalEnd = true, beforeConnected = true) => {
+    const call = { ...callLogRef.current! }
     if (isLocalEnd) {
       if (beforeConnected) {
         //emit missed call
+        const updatedCall: ICall = { ...callLogRef.current!, status: "missed" };
         socket?.emit(SOCKET_EVENTS.MISSED_CALL, {
           from: loggedInUser?._id!,
           to: targetUser.current?._id!,
           receiverId: targetUser.current?._id!,
-          callInfo:{
-            caller: loggedInUser?._id!,
-            callee: targetUser.current?._id!,
-            callType: callType!,
-            status: "missed",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }
+          callInfo: updatedCall
         })
+        addOrUpdateCallLog({ isUpdate: true, call: updatedCall });
         resetCalledUserState();
       } else {
         socket?.emit(SOCKET_EVENTS.CALL_ENDED, {
@@ -169,9 +247,13 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       resetState();
       setCallStatus("ended");
     }
-  }, [socket, resetState, loggedInUser, callType, resetCalledUserState]);
+    if (!beforeConnected) {
+      await updateCallOnDB(call._id!, "connected", undefined, new Date());
+      addOrUpdateCallLog({ isUpdate: true, call: { ...call, status: "connected", endedAt: new Date().toISOString() } });
+    }
+  }, [socket, resetState, loggedInUser, callType, resetCalledUserState, updateCallOnDB, addOrUpdateCallLog]);
 
-  const onRejectCall = useCallback((isLocalReject = true) => {
+  const onRejectCall = useCallback(async (isLocalReject = true) => {
     if (isLocalReject) {
       setCallStatus("idle");
       resetCalledUserState();
@@ -180,9 +262,11 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         to: incomingCall?.from?._id!,
         receiverId: incomingCall?.from?._id!,
       });
+      await updateCallOnDB(callLogRef.current?._id!, "rejected");
+      addOrUpdateCallLog({ isUpdate: true, call: { ...callLogRef.current!, status: "rejected" } });
     } else { setCallStatus("rejected"); }
     resetState();
-  }, [socket, resetState, loggedInUser, incomingCall, resetCalledUserState]);
+  }, [socket, resetState, loggedInUser, incomingCall, resetCalledUserState, updateCallOnDB, addOrUpdateCallLog]);
 
   const onUserBusy = useCallback(() => {
     setCallStatus("busy");
@@ -215,7 +299,7 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           });
           return;
         }
-        const { callType, from, offer } = payload;
+        const { callType, from, offer, callLog } = payload;
         setCallStatus("incoming-ringing");
         socket.emit(SOCKET_EVENTS.CALL_RINGING, {
           from: loggedInUser?._id!,
@@ -227,6 +311,7 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           from,
           offer
         });
+        addOrUpdateCallLog({ isUpdate: false, call: callLog, otherUser: from })
       });
 
       socket.on(SOCKET_EVENTS.CALL_ACCEPTED, async (payload) => {
@@ -237,11 +322,12 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
         setCallStatus("connected");
         setCallType(callType);
+        addOrUpdateCallLog({ isUpdate: true, call: { ...callLogRef.current!, status: "connected", connectedAt: new Date().toISOString() } });
       });
 
-      socket.on(SOCKET_EVENTS.CALL_ENDED, (payload) => {
+      socket.on(SOCKET_EVENTS.CALL_ENDED, async (payload) => {
         console.log("Call ended", payload);
-        endCall(false);
+        await endCall(false);
       });
 
       socket.on(SOCKET_EVENTS.ICE_CANDIDATE, async (payload) => {
@@ -254,7 +340,8 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       socket.on(SOCKET_EVENTS.CALL_REJECTED, async (payload) => {
         console.log("Call rejected", payload);
-        onRejectCall(false);
+        addOrUpdateCallLog({ isUpdate: true, call: { ...callLogRef.current!, status: "rejected" } });
+        await onRejectCall(false);
       });
 
       socket.on(SOCKET_EVENTS.CALL_RINGING, async (payload) => {
@@ -268,10 +355,12 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       })
 
       socket.on(SOCKET_EVENTS.MISSED_CALL, async (payload) => {
-        console.log("missed call", payload);
+        toast.info("Missed call from " + incomingCall?.from.name);
+        await updateCallOnDB(payload.callInfo._id, "missed");
+        addOrUpdateCallLog({ isUpdate: true, call: { ...payload.callInfo, status: "missed" } });
         setCallStatus("idle");
         setIncomingCall(null);
-        toast.info("Missed call from " + payload.callInfo.caller);
+        callLogRef.current = null;
       })
     }
 
@@ -287,7 +376,7 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         socket.off(SOCKET_EVENTS.MISSED_CALL);
       }
     }
-  }, [socket, endCall, onRejectCall, loggedInUser, callStatus, onUserBusy]);
+  }, [socket, endCall, onRejectCall, loggedInUser, callStatus, onUserBusy, addOrUpdateCallLog, updateCallOnDB, incomingCall]);
 
   return (
     <WebRTCContext.Provider value={{

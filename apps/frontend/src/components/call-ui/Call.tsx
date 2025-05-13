@@ -14,6 +14,7 @@ import CallDuration, { CallDurationRef } from './CallDuration';
 import CallStateStatus from './CallStateStatus';
 import DraggableBox from './Dragable';
 import IncomingCall from './IncomingCall';
+import { getTimeString } from '@/utils/utility';
 
 // navigator.mediaDevices.getUserMedia({
 //   audio: {
@@ -65,7 +66,7 @@ const Call: React.FC<CallProps> = ({ user }) => {
     missedCall
   } = useWebRTC();
 
-  const onCallTimeOut = useCallback(()=>{
+  const onCallTimeOut = useCallback(() => {
     missedCall(true);
   }, [missedCall])
 
@@ -118,29 +119,31 @@ const Call: React.FC<CallProps> = ({ user }) => {
   }
 
   const callAgain = useCallback(() => {
-    if(targetUser && callType){
+    if (targetUser && callType) {
       callUser(targetUser, callType);
     }
-    else{
+    else {
       toast.error("Something went wrong, try again later");
     }
-  }, [callUser, callType, targetUser])
+  }, [callUser, callType, targetUser]);
+
+
 
   if (callStatus === "idle") {
     return null;
   }
-  else if(callStatus === "ended"){
+  else if (callStatus === "ended") {
     return <CallStateStatus
       onCallAgain={callAgain}
       onClose={resetCalledUserState}
       status='ended'
       userName={targetUser?.name || ""}
       avatar={targetUser?.profilePic?.avatar}
-      duration={callDurationRef.current?.display || ""}
+      duration={callDurationRef.current?.timeInSec ? getTimeString(callDurationRef.current.timeInSec) : undefined}
       endedAt={new Date().toLocaleDateString()}
     />
   }
-  else if(callStatus === "rejected"){
+  else if (callStatus === "rejected") {
     return <CallStateStatus
       onCallAgain={callAgain}
       onClose={resetCalledUserState}
@@ -149,7 +152,7 @@ const Call: React.FC<CallProps> = ({ user }) => {
       avatar={targetUser?.profilePic?.avatar}
     />
   }
-  else if(callStatus === "busy"){
+  else if (callStatus === "busy") {
     return <CallStateStatus
       onCallAgain={callAgain}
       onClose={resetCalledUserState}
@@ -158,7 +161,7 @@ const Call: React.FC<CallProps> = ({ user }) => {
       avatar={targetUser?.profilePic?.avatar}
     />
   }
-  else if (callStatus === "missed"){
+  else if (callStatus === "missed") {
     return <CallStateStatus
       onCallAgain={callAgain}
       onClose={resetCalledUserState}
@@ -247,7 +250,7 @@ const Call: React.FC<CallProps> = ({ user }) => {
                     userIcon={targetUser?.profilePic?.avatar}
                   />}
                   <p className='text-lg font-bold mt-10'>{targetUser?.name}</p>
-                  <CallDuration ref={callDurationRef}/>
+                  <CallDuration ref={callDurationRef} />
                 </div>
               )
             )
@@ -292,7 +295,7 @@ const Call: React.FC<CallProps> = ({ user }) => {
           )}
 
           <button
-            onClick={() => endCall(true, callStatus !== "connected")}
+            onClick={async() => await endCall(true, callStatus !== "connected")}
             className="p-4 rounded-full bg-red-500 hover:bg-red-600 shadow-lg transition-all"
           >
             <Phone className="w-6 h-6 text-white" />
@@ -315,12 +318,12 @@ const Call: React.FC<CallProps> = ({ user }) => {
         {/* <button onClick={() => setOpen(true)}>call</button> */}
         <div className="flex-1 relative">
           {callStatus === "calling" && isMinimized && (
-           <div className='flex items-center justify-center'>
-             <CallAvatar
-              avatar={targetUser?.profilePic?.avatar}
-              className='w-28 h-28 md:w-44 md:h-44'
-            />
-           </div>
+            <div className='flex items-center justify-center'>
+              <CallAvatar
+                avatar={targetUser?.profilePic?.avatar}
+                className='w-28 h-28 md:w-44 md:h-44'
+              />
+            </div>
           )}
           {callStatus === "connected" && (
             callType === 'video' ? (

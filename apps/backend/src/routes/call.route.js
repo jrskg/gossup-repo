@@ -7,6 +7,6 @@ router.use(authenticate);
 
 router.route("/create").post(createCall);
 router.route("/:callId").put(updateCall);
-router.route("/logs").put(getCallLogs);
+router.route("/logs").get(getCallLogs);
 
 export default router;

@@ -2,7 +2,8 @@ import { StoryPrivacy } from "@/interface/storyInterface";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface PrivacyState{
-  storyPrivacy: StoryPrivacy
+  storyPrivacy: StoryPrivacy;
+  isLoaded: boolean
 }
 
 const initialState: PrivacyState = {
@@ -10,7 +11,8 @@ const initialState: PrivacyState = {
     visibility: "all",
     allowedUsers: [],
     excludedUsers: []
-  }
+  },
+  isLoaded: false
 }
 
 const privacySlice = createSlice({
@@ -19,9 +21,13 @@ const privacySlice = createSlice({
   reducers: {
     setStoryPrivacy: (state, action: PayloadAction<StoryPrivacy>) => {
       state.storyPrivacy = action.payload;
+      state.isLoaded = true;
     },
+    setIsPrivacyLoaded: (state, action: PayloadAction<boolean>) => {
+      state.isLoaded = action.payload;
+    }
   }
 })
 
-export const { setStoryPrivacy } = privacySlice.actions;
+export const { setStoryPrivacy, setIsPrivacyLoaded } = privacySlice.actions;
 export default privacySlice.reducer;

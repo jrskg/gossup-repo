@@ -12,6 +12,7 @@ import messagesReducer from "./slices/messages";
 import selectedAttachmentReducer from "./slices/selectedAttachment";
 import storyReducer from "./slices/story";
 import privacyReducer from "./slices/privacy";
+import callReducer from "./slices/call";
 
 const appReducer = combineReducers({
   user: userReducer,
@@ -25,7 +26,8 @@ const appReducer = combineReducers({
   messages:messagesReducer,
   selectedAttachment:selectedAttachmentReducer,
   story: storyReducer,
-  privacy: privacyReducer
+  privacy: privacyReducer,
+  call: callReducer
 });
 
 const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: Action) => {

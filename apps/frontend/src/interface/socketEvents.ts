@@ -1,4 +1,5 @@
 import {SOCKET_EVENTS} from "../utils/constants";
+import { ICall } from "./callInterface";
 import type { DeliveryStatus, IChat, IMessage } from "./chatInterface";
 import { IUserShort } from "./interface";
 import { MyStory, ReactionType, StoryView } from "./storyInterface";
@@ -88,6 +89,7 @@ export type SocketEventMap = {
     offer: RTCSessionDescriptionInit,
     callType: CallType,
     receiverId: string,
+    callLog: ICall
   }) => void;
 
   [SOCKET_EVENTS.CALL_ACCEPTED]: (payload:{
@@ -133,15 +135,6 @@ export type SocketEventMap = {
     from: string,
     to: string,
     receiverId: string,
-    callInfo: {
-      caller: string;
-      callee: string;
-      callType: CallType;
-      status: "missed"|"rejected"|"connected";
-      connectedAt?: string;
-      duration?: number;
-      createdAt: string;
-      updatedAt: string;
-    }
+    callInfo: ICall
   }) => void;
 }

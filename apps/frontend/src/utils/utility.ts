@@ -44,7 +44,7 @@ const getDateStr = (createdAt: string) => {
   return Math.floor(diffDays / 7) + " weeks ago";
 }
 
-const getMessageTimestamp = (date?: Date): { time: string, date?: string } => {
+const getMessageTimestamp = (date?: Date): { time: string, date: string } => {
   if (!date) {
     return { time: "", date: "" };
   }
@@ -231,6 +231,18 @@ const getMediaDuration = (file: File): Promise<number> => {
     mediaElement.src = URL.createObjectURL(file);
   })
 }
+const getTimeString = (timeInSec: number): string => {
+  const hours = Math.floor(timeInSec / 3600);
+  const minutes = Math.floor((timeInSec % 3600) / 60);
+  const seconds = timeInSec % 60;
+  let formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+  if(hours === 0){
+    formattedTime = formattedTime.slice(3)
+  }
+
+  return formattedTime
+}
 
 export {
   generateFileId, getAvatarStyle,
@@ -243,6 +255,7 @@ export {
   getNameStyle, getTriangleStyle,
   throttle, toggleDarkMode,
   getMediaDuration,
-  getSmartTimestamp
+  getSmartTimestamp,
+  getTimeString
 };
 

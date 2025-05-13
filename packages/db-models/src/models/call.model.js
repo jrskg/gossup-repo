@@ -15,16 +15,26 @@ const callSchema = new mongoose.Schema({
   status:{
     type: String,
     enum: CALL_STATUS_MODEL,
-    required: true
+    required: true,
+    default: "initiated"
   },
   callType:{
     type: String,
     enum: CALL_TYPE_MODEL,
     required: true
   },
-  callDuration: {
-    type: Number,
-    required: true
+  // callDuration: {
+  //   type: Number,
+  //   required: true,
+  //   default: 0
+  // },
+  connectedAt: {
+    type: Date,
+    default: Date.now
+  },
+  endedAt: {
+    type: Date,
+    default: Date.now
   }
 }, {timestamps: true})
 

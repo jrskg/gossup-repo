@@ -8,13 +8,13 @@ import {
   ParticipantsContext, 
   SelectedChatContext 
 } from "@/context/contexts";
-import { useAppDispatch } from "@/hooks/hooks";
+import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import type { ChatMap, IChat, ParticipantsMap } from "@/interface/chatInterface";
 import type { IUser, ResponseWithData } from "@/interface/interface";
 import { UserPrivacy } from "@/interface/storyInterface";
 import MainLayout from "@/layouts/MainLayout";
 import { Messages } from "@/redux/slices/messages";
-import { setStoryPrivacy } from "@/redux/slices/privacy";
+import { setIsPrivacyLoaded, setStoryPrivacy } from "@/redux/slices/privacy";
 import instance from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
 import React, { useEffect, useState } from "react";
@@ -41,20 +41,24 @@ const Home:React.FC<HomeProps> = ({
   
   const [screenSize, setScreenSize] = useState<string>("large");
   const dispatch = useAppDispatch();
+  const {isLoaded} = useAppSelector(state => state.privacy)
 
   useEffect(() => {
     (async()=>{
+      if(isLoaded) return
       try {
         const {data} = await instance.get<ResponseWithData<UserPrivacy>>("/privacy");
         dispatch(setStoryPrivacy(data.data.storyPrivacy));
+        toast.success(data.message);
       } catch (error) {
+        dispatch(setIsPrivacyLoaded(true));
         if(error instanceof AxiosError && error.response){
           toast.error(error.response.data.message);
         }
         console.log(error);
       }
     })()
-  }, []);
+  }, [isLoaded, dispatch]);
 
   useEffect(() => {
     const updateScreenSize = () => {

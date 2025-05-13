@@ -84,7 +84,7 @@ const IncomingCall: React.FC<IncomingCallProps> = ({
             </button>
 
             <button
-              onClick={() =>  onReject(true)}
+              onClick={async() => await onReject(true)}
               className="w-full flex items-center justify-center gap-3 px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors"
             >
               <PhoneOff className="w-6 h-6" />

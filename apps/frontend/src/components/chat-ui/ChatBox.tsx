@@ -13,6 +13,7 @@ import AddAttachments from './AddAttachments'
 import SendAttachments from './SendAttachments'
 import { useWebRTC } from '@/context/WebRTCContext'
 import { IUserShort } from '@/interface/interface'
+import { CallType } from '@/interface/webRtcInterface'
 
 
 const getFriendId = (participants: string[], userId: string) => {
@@ -42,7 +43,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
     handleInputMessageChange
   } = useChatBoxLogic(selectedChat, userId, userName);
 
-  const {callUser} = useWebRTC();
+  const { callUser } = useWebRTC();
 
   const handleCloseChat = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     e.stopPropagation();
@@ -58,13 +59,24 @@ const ChatBox: React.FC<ChatBoxProps> = ({
     }
   }
 
+  const handleCallClick = (callType: CallType) => {
+    if(!selectedChat) return;
+    const userWithBio = participants[getFriendId(selectedChat.participants, userId)];
+    const user: IUserShort = {
+      _id: userWithBio._id,
+      name: userWithBio.name,
+      profilePic: userWithBio.profilePic,
+    }
+    callUser(user, callType);
+  }
+
   return (
     <div className={cn("transition-all duration-300 bg-primary-5 dark:bg-dark-2 h-full md:rounded-tr-md md:rounded-br-md md:border-l md:dark:border-primary-1 relative", className)}>
       {
         selectedChat ? <>
           <SendAttachments selectedChat={selectedChat} userId={userId} />
-          <div 
-            onClick={handleDetailsClick} 
+          <div
+            onClick={handleDetailsClick}
             className='w-full bg-primary-1 dark:bg-dark-3 px-5 py-2 md:rounded-tr-md flex items-center gap-2 h-[65px] relative cursor-pointer'
           >
             <Avatar className='w-12 h-12'>
@@ -74,32 +86,20 @@ const ChatBox: React.FC<ChatBoxProps> = ({
               <p className='text-xl font-bold leading-none'>{getChatName(selectedChat)}</p>
               {/* <p className='text-sm'>Status</p> */}
             </div>
-            <div className='flex items-center gap-3 ml-auto'>
+            {selectedChat.chatType === "one-to-one" && <div className='flex items-center gap-8 ml-auto'>
               <Phone
                 onClick={(e) => {
                   e.stopPropagation();
-                  const userWithBio = participants[getFriendId(selectedChat.participants, userId)];
-                  const user:IUserShort = {
-                    _id: userWithBio._id,
-                    name: userWithBio.name,
-                    profilePic: userWithBio.profilePic,
-                  }
-                  callUser(user, "audio");
+                  handleCallClick("audio");
                 }}
-                className='w-6 h-6 text-primary-5 dark:text-dark-1' />
+                className='w-6 h-6 text-primary-6 dark:text-white hover:scale-125 transition-all' />
               <Video
                 onClick={(e) => {
                   e.stopPropagation();
-                  const userWithBio = participants[getFriendId(selectedChat.participants, userId)];
-                  const user:IUserShort = {
-                    _id: userWithBio._id,
-                    name: userWithBio.name,
-                    profilePic: userWithBio.profilePic,
-                  }
-                  callUser(user, "video");
+                  handleCallClick("video");
                 }}
-                className='w-6 h-6 text-primary-5 dark:text-dark-1' />
-            </div>
+                className='w-6 h-6 text-primary-6 dark:text-white hover:scale-125 transition-all' />
+            </div>}
             <XIcon onClick={handleCloseChat} className='absolute right-3 w-6 h-6 cursor-pointer md:hidden ' />
           </div>
           <MessageContainer
