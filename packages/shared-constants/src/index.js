@@ -1,6 +1,7 @@
 export const DB_NAME = "goss-up";
 
-export const DEFAULT_BIO = "Hey there! I am using Goss-up to stay connected with friends.";
+export const DEFAULT_BIO =
+  "Hey there! I am using Goss-up to stay connected with friends.";
 
 export const OK = 200;
 export const CREATED = 201;
@@ -27,7 +28,7 @@ export const KAFKA_UPDATE_EVENT = "update_status";
 
 export const MESSAGE_TYPES = ["text", "file"];
 export const FILE_TYPES = ["image", "video", "audio", "other"];
-export const CHAT_TYPES = ["one-to-one", "group"]
+export const CHAT_TYPES = ["one-to-one", "group"];
 
 export const SOCKET_EVENTS_SERVER = {
   JOIN_ROOM: "join_room",
@@ -51,7 +52,7 @@ export const SOCKET_EVENTS_SERVER = {
   REACTED_ON_FRIEND_STORY: "reacted_on_friend_story",
   DELETED_MY_STORY: "deleted_my_story",
   FRIEND_DELETED_STORY: "friend_deleted_story",
-  
+
   CALL_MADE: "call_made",
   CALL_ACCEPTED: "call_accepted",
   ICE_CANDIDATE: "ice_candidate",
@@ -60,15 +61,30 @@ export const SOCKET_EVENTS_SERVER = {
   CALL_RINGING: "call_ringing",
   USER_BUSY: "user_busy",
   MISSED_CALL: "missed_call",
-  
+  TOGGLE_VIDEO: "toggle_video",
+  TOGGLE_AUDIO: "toggle_audio",
+
   USER_ONLINE: "user_online",
   USER_OFFLINE: "user_offline",
   USER_JOINED: "user_joined",
   USER_LEFT: "user_left",
 };
 
-export const STORY_TYPES = ['text', 'image', 'video', 'audio'];
-export const STORY_VISIBILITY = ['all', 'only', 'except'];
-export const EMOJI_TYPE = ["like", "love", "haha", "wow", "sad", "angry", "care"];
-export const CALL_STATUS_MODEL = ["initiated","missed", "connected", "rejected"];
+export const STORY_TYPES = ["text", "image", "video", "audio"];
+export const STORY_VISIBILITY = ["all", "only", "except"];
+export const EMOJI_TYPE = [
+  "like",
+  "love",
+  "haha",
+  "wow",
+  "sad",
+  "angry",
+  "care",
+];
+export const CALL_STATUS_MODEL = [
+  "initiated",
+  "missed",
+  "connected",
+  "rejected",
+];
 export const CALL_TYPE_MODEL = ["audio", "video"];

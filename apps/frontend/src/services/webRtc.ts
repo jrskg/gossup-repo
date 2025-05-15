@@ -17,17 +17,36 @@ export const createPeerConnection = (
   }
 
   peer.ontrack = (event) => {
-    console.log("Track event stream", event.streams[0]);
     onTrack(event.streams[0]);
   }
 
   return peer;
 }
 
+// navigator.mediaDevices.getUserMedia({
+//   audio: {
+//     echoCancellation: true,
+//     noiseSuppression: true,
+//     autoGainControl: true
+//   },
+//   video: {
+//     width: { ideal: 1280 },
+//     height: { ideal: 720 },
+//     frameRate: { ideal: 30 },
+//     facingMode: 'user'
+//   }
+// });
+
 export const getLocalStream = async (type: "audio" | "video") => {
   let stream: MediaStream;
   if (type === "audio") {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+    });
   } else {
     stream = await navigator.mediaDevices.getDisplayMedia({
       video: {
@@ -48,7 +67,6 @@ export const closePeerConnection = (localStream: MediaStream | null) => {
     peer = null;
   }
   if (localStream) {
-    console.log("Stopping local stream tracks");
     localStream.getTracks().forEach(track => track.stop());
   }
 }

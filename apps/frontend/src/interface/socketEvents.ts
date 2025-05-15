@@ -137,4 +137,18 @@ export type SocketEventMap = {
     receiverId: string,
     callInfo: ICall
   }) => void;
+
+  [SOCKET_EVENTS.TOGGLE_VIDEO]: (payload:{
+    from: string,
+    to: string,
+    receiverId: string,
+    isVideoOn: boolean
+  }) => void;
+
+  [SOCKET_EVENTS.TOGGLE_AUDIO]: (payload:{
+    from: string,
+    to: string,
+    receiverId: string,
+    isAudioOn: boolean
+  }) => void;
 }

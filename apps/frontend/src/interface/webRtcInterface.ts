@@ -1,3 +1,4 @@
+import { TypedSocket } from "@/context/socketContext";
 import { IUserShort } from "./interface";
 
 export type CallType = "audio" | "video";
@@ -21,8 +22,14 @@ export type WebRTCContextType = {
   targetUser: IUserShort | null;
   isRinging: boolean;
   onRejectCall: (isLocalReject?: boolean) => void;
-  setCallStatus: React.Dispatch<React.SetStateAction<CallStatus>>
   resetCalledUserState: () => void
   missedCall: (isLocalMissed?: boolean) => void
+  // setCallStatus: React.Dispatch<React.SetStateAction<CallStatus>>
+  toggleMedia: (media: "audio" | "video", value: boolean) => void
+  remoteMediaStatus: {
+    video: boolean
+    audio: boolean
+  }
+  socket: TypedSocket | null
 };
 

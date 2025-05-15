@@ -24,7 +24,7 @@ const CallDuration = forwardRef<CallDurationRef>((_, ref) => {
   }, [counter]);
 
   return (
-    <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-lg">
+    <div className="absolute bottom-5 right-5 bg-black/50 text-white px-3 py-1 rounded-lg">
       {display}
     </div>
   );

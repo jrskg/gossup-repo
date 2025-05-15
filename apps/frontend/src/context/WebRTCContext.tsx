@@ -28,7 +28,6 @@ type CallLog = Case1 | Case2
 
 export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
-  // const [callAccepted, setCallAccepted] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
   const [isRinging, setIsRinging] = useState(false);
   const [callType, setCallType] = useState<CallType>();
@@ -37,12 +36,30 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [targetUserState, setTargetUserState] = useState<IUserShort | null>(null);
 
+  const [remoteMediaStatus, setRemoteMediaStatus] = useState({
+    video: true,
+    audio: true
+  });
+
   const callLogRef = useRef<ICall | null>(null);
   const targetUser = useRef<IUserShort | null>(null);
 
   const { socket } = useSocket();
   const { user: loggedInUser } = useAppSelector(state => state.user);
   const dispatch = useAppDispatch();
+
+  const toggleMedia = useCallback(
+    (media: "audio" | "video", value: boolean) => {
+      if (localStream) {
+        if (media === "audio") {
+          if (localStream.getAudioTracks()[0]) localStream.getAudioTracks()[0].enabled = value;
+        } else {
+          if (localStream.getVideoTracks()[0]) localStream.getVideoTracks()[0].enabled = value;
+        }
+      }
+    },
+    [localStream],
+  )
 
   const addOrUpdateCallLog = useCallback((logParam: CallLog) => {
     callLogRef.current = logParam.call
@@ -90,7 +107,6 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       resetCalledUserState();
       return
     }
-    console.log(call)
     addOrUpdateCallLog({ isUpdate: false, call, otherUser: user });
 
     const peer = createPeerConnection(handleTrack, handleIceCandidate);
@@ -191,11 +207,6 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsRinging(false);
     setIncomingCall(null);
     callLogRef.current = null;
-
-    // setCallStatus("idle"); // handled separately
-    // setCallType(undefined);
-    // targetUser.current = null;
-    // setTargetUserState(null);
   }, [localStream])
 
   const resetCalledUserState = useCallback(() => {
@@ -325,8 +336,7 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addOrUpdateCallLog({ isUpdate: true, call: { ...callLogRef.current!, status: "connected", connectedAt: new Date().toISOString() } });
       });
 
-      socket.on(SOCKET_EVENTS.CALL_ENDED, async (payload) => {
-        console.log("Call ended", payload);
+      socket.on(SOCKET_EVENTS.CALL_ENDED, async () => {
         await endCall(false);
       });
 
@@ -338,21 +348,18 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       });
 
-      socket.on(SOCKET_EVENTS.CALL_REJECTED, async (payload) => {
-        console.log("Call rejected", payload);
+      socket.on(SOCKET_EVENTS.CALL_REJECTED, async () => {
         addOrUpdateCallLog({ isUpdate: true, call: { ...callLogRef.current!, status: "rejected" } });
         await onRejectCall(false);
       });
 
-      socket.on(SOCKET_EVENTS.CALL_RINGING, async (payload) => {
-        console.log("Call ringing", payload);
+      socket.on(SOCKET_EVENTS.CALL_RINGING, async () => {
         setIsRinging(true);
       });
 
-      socket.on(SOCKET_EVENTS.USER_BUSY, async (payload) => {
-        console.log("User busy", payload);
+      socket.on(SOCKET_EVENTS.USER_BUSY, async () => {
         onUserBusy();
-      })
+      });
 
       socket.on(SOCKET_EVENTS.MISSED_CALL, async (payload) => {
         toast.info("Missed call from " + incomingCall?.from.name);
@@ -361,7 +368,17 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setCallStatus("idle");
         setIncomingCall(null);
         callLogRef.current = null;
-      })
+      });
+
+      socket.on(SOCKET_EVENTS.TOGGLE_VIDEO, (payload) => {
+        const { isVideoOn } = payload;
+        setRemoteMediaStatus(prev => ({ ...prev, video: isVideoOn }))
+      });
+
+      socket.on(SOCKET_EVENTS.TOGGLE_AUDIO, (payload) => {
+        const { isAudioOn } = payload;
+        setRemoteMediaStatus(prev => ({ ...prev, audio: isAudioOn }))
+      });
     }
 
     return () => {
@@ -374,6 +391,8 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         socket.off(SOCKET_EVENTS.CALL_RINGING);
         socket.off(SOCKET_EVENTS.USER_BUSY);
         socket.off(SOCKET_EVENTS.MISSED_CALL);
+        socket.off(SOCKET_EVENTS.TOGGLE_VIDEO);
+        socket.off(SOCKET_EVENTS.TOGGLE_AUDIO);
       }
     }
   }, [socket, endCall, onRejectCall, loggedInUser, callStatus, onUserBusy, addOrUpdateCallLog, updateCallOnDB, incomingCall]);
@@ -391,9 +410,11 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       targetUser: targetUserState,
       isRinging,
       onRejectCall,
-      setCallStatus,
       resetCalledUserState,
-      missedCall
+      missedCall,
+      toggleMedia,
+      remoteMediaStatus,
+      socket
     }}>
       {children}
     </WebRTCContext.Provider>

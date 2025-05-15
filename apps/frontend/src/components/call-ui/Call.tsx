@@ -2,33 +2,19 @@ import { useWebRTC } from '@/context/WebRTCContext';
 import { useCallTimeOut } from '@/hooks/callHooks';
 import { IUser } from '@/interface/interface';
 import { cn } from '@/lib/utils';
+import { SOCKET_EVENTS } from '@/utils/constants';
+import { getTimeString } from '@/utils/utility';
 import clsx from "clsx";
 import { Maximize, Mic, MicOff, Minimize2, Phone, Video, VideoOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import defaultAvatar from "../../assets/defaultAvatar.jpg";
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import AudioWave from './AudioWave';
 import CallAvatar from './CallAvatar';
 import CallDuration, { CallDurationRef } from './CallDuration';
 import CallStateStatus from './CallStateStatus';
 import DraggableBox from './Dragable';
 import IncomingCall from './IncomingCall';
-import { getTimeString } from '@/utils/utility';
-
-// navigator.mediaDevices.getUserMedia({
-//   audio: {
-//     echoCancellation: true,
-//     noiseSuppression: true,
-//     autoGainControl: true
-//   },
-//   video: {
-//     width: { ideal: 1280 },
-//     height: { ideal: 720 },
-//     frameRate: { ideal: 30 },
-//     facingMode: 'user'
-//   }
-// });
+import OwnCallProfile from './OwnCallProfile';
 
 interface CallProps {
   user: IUser
@@ -60,17 +46,46 @@ const Call: React.FC<CallProps> = ({ user }) => {
     targetUser,
     isRinging,
     onRejectCall,
-    setCallStatus,
     callUser,
     resetCalledUserState,
-    missedCall
+    missedCall,
+    toggleMedia,
+    remoteMediaStatus,
+    socket
   } = useWebRTC();
+
+  const toggleMyMedia = (media: "audio" | "video") => {
+    const payloadForSocket = {
+      from: user._id,
+      to: targetUser?._id!,
+      receiverId: targetUser?._id!
+    }
+    if (media === "audio") {
+      setIsMuted(prev => {
+        toggleMedia(media, prev);
+        if (socket) socket.emit(SOCKET_EVENTS.TOGGLE_AUDIO, {
+          ...payloadForSocket,
+          isAudioOn: prev
+        });
+        return !prev;
+      });
+    } else {
+      setIsVideoOff(prev => {
+        toggleMedia(media, prev);
+        if (socket) socket.emit(SOCKET_EVENTS.TOGGLE_VIDEO, {
+          ...payloadForSocket,
+          isVideoOn: prev
+        })
+        return !prev;
+      });
+    }
+  }
 
   const onCallTimeOut = useCallback(() => {
     missedCall(true);
   }, [missedCall])
 
-  useCallTimeOut(10, callStatus, onCallTimeOut);
+  useCallTimeOut(40, callStatus, onCallTimeOut);
 
   useEffect(() => {
     if (!localStream) return;
@@ -126,8 +141,6 @@ const Call: React.FC<CallProps> = ({ user }) => {
       toast.error("Something went wrong, try again later");
     }
   }, [callUser, callType, targetUser]);
-
-
 
   if (callStatus === "idle") {
     return null;
@@ -192,27 +205,28 @@ const Call: React.FC<CallProps> = ({ user }) => {
         <DraggableBox
           className={clsx('w-36 h-36 md:w-56 md:h-56', callType === "audio" ? "hidden md:flex" : "flex")}
         >
-          <div className="w-full h-full rounded-full bg-primary-4 p-2 dark:bg-primary-3 flex items-center justify-center">
+          <div className="w-full h-full rounded-full bg-primary-4 p-2 dark:bg-primary-3 flex items-center justify-center overflow-hidden">
             {callType === 'video' ? (
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full rounded-full border-4 border-white dark:border-gray-800 object-cover shadow-lg"
-              />
+              <>
+                {isVideoOff && !isMinimized && (
+                  <OwnCallProfile user={user} />
+                )}
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={cn("w-full h-full rounded-full border-4 border-white dark:border-gray-800 object-cover shadow-lg", isVideoOff && "hidden")}
+                />
+              </>
             ) : (
-              <div className="w-full h-full rounded-full bg-primary-5 dark:bg-gray-700 flex items-center justify-center">
-                <Avatar className="w-full h-full select-none pointer-events-none">
-                  <AvatarImage className='object-cover' src={user.profilePic ? user.profilePic.avatar : defaultAvatar} alt="user" />
-                  <AvatarFallback>U</AvatarFallback>
-                </Avatar>
-              </div>
+              <OwnCallProfile user={user} />
             )}
           </div>
         </DraggableBox>
 
         <div className="flex-1 relative">
+          {callStatus === "connected" && <CallDuration ref={callDurationRef} />}
           {
             callStatus === "calling" && !isMinimized && (
               <div className="flex flex-col items-center justify-center h-full space-y-4">
@@ -231,12 +245,27 @@ const Call: React.FC<CallProps> = ({ user }) => {
           {
             callStatus === "connected" && (
               callType === 'video' ? (
-                <video
-                  ref={remoteVideoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-contain"
-                />
+                <>
+                  {!remoteMediaStatus.audio && remoteMediaStatus.video &&
+                    <MicOff className='absolute right-10 top-10 w-8 h-8 text-danger'/>
+                  }
+                  {!remoteMediaStatus.video && !isMinimized && <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full flex items-center justify-center bg-primary-6 dark:bg-dark-2'>
+                    <div className='flex flex-col items-center gap-2'>
+                      <CallAvatar avatar={targetUser?.profilePic?.avatar} />
+                      <p className='text-lg'>{targetUser?.name}</p>
+                      <div className='flex gap-5 mt-5'>
+                        <VideoOff className='text-danger' />
+                        {!remoteMediaStatus.audio && <MicOff className='text-danger' />}
+                      </div>
+                    </div>
+                  </div>}
+                  <video
+                    ref={remoteVideoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full">
                   <audio
@@ -250,7 +279,7 @@ const Call: React.FC<CallProps> = ({ user }) => {
                     userIcon={targetUser?.profilePic?.avatar}
                   />}
                   <p className='text-lg font-bold mt-10'>{targetUser?.name}</p>
-                  <CallDuration ref={callDurationRef} />
+                  {!remoteMediaStatus.audio && <MicOff className='text-danger mt-5' />}
                 </div>
               )
             )
@@ -265,10 +294,9 @@ const Call: React.FC<CallProps> = ({ user }) => {
             <Minimize2 className="w-6 h-6 text-gray-700 dark:text-gray-300" />
           </button>
           <button
-            // onClick={() => {
-            //   toggleMedia('audio', !isMuted);
-            //   setIsMuted(!isMuted);
-            // }}
+            onClick={() => {
+              toggleMyMedia("audio");
+            }}
             className="p-4 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-lg transition-all"
           >
             {isMuted ? (
@@ -280,10 +308,9 @@ const Call: React.FC<CallProps> = ({ user }) => {
 
           {callType === 'video' && (
             <button
-              // onClick={() => {
-              //   toggleMedia('video', !isVideoOff);
-              //   setIsVideoOff(!isVideoOff);
-              // }}
+              onClick={() => {
+                toggleMyMedia("video");
+              }}
               className="p-4 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-lg transition-all"
             >
               {isVideoOff ? (
@@ -295,7 +322,7 @@ const Call: React.FC<CallProps> = ({ user }) => {
           )}
 
           <button
-            onClick={async() => await endCall(true, callStatus !== "connected")}
+            onClick={async () => await endCall(true, callStatus !== "connected")}
             className="p-4 rounded-full bg-red-500 hover:bg-red-600 shadow-lg transition-all"
           >
             <Phone className="w-6 h-6 text-white" />
@@ -315,7 +342,8 @@ const Call: React.FC<CallProps> = ({ user }) => {
           className="absolute opacity-0 group-hover:opacity-100 top-2 right-2 w-6 h-6 text-white cursor-pointer transition-all duration-200"
           onClick={handleMiniAndMaxize}
         />
-        {/* <button onClick={() => setOpen(true)}>call</button> */}
+        {!remoteMediaStatus.audio && <MicOff className='absolute top-2 left-2 w-6 h-6 text-danger' />}
+        {!remoteMediaStatus.video && <VideoOff className='absolute top-2 left-11 w-6 h-6 text-danger' />}
         <div className="flex-1 relative">
           {callStatus === "calling" && isMinimized && (
             <div className='flex items-center justify-center'>
@@ -327,12 +355,20 @@ const Call: React.FC<CallProps> = ({ user }) => {
           )}
           {callStatus === "connected" && (
             callType === 'video' ? (
+              <>
+              {!remoteMediaStatus.video && <div className='w-full h-full flex justify-center items-center'>
+                <CallAvatar
+                  avatar={targetUser?.profilePic?.avatar}
+                  className='w-32 h-32 md:w-40 md:h-40'
+                />
+                </div>}
               <video
                 ref={draggableRemoteVideoRef}
                 autoPlay
                 playsInline
-                className="w-full h-full object-contain"
+                className={cn("w-full h-full object-contain", !remoteMediaStatus.video && "hidden")}
               />
+              </>
             ) : (
               <div className="flex items-center justify-center h-full">
                 <audio

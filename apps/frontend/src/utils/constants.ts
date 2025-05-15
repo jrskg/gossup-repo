@@ -52,6 +52,8 @@ export const SOCKET_EVENTS = {
   CALL_RINGING: "call_ringing",
   USER_BUSY: "user_busy",
   MISSED_CALL: "missed_call",
+  TOGGLE_VIDEO: "toggle_video",
+  TOGGLE_AUDIO: "toggle_audio",
 
   USER_ONLINE: "user_online",
   USER_OFFLINE: "user_offline",

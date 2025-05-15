@@ -122,6 +122,8 @@ class SocketService {
             case SOCKET_EVENTS_SERVER.CALL_RINGING:
             case SOCKET_EVENTS_SERVER.USER_BUSY:
             case SOCKET_EVENTS_SERVER.MISSED_CALL:
+            case SOCKET_EVENTS_SERVER.TOGGLE_AUDIO:
+            case SOCKET_EVENTS_SERVER.TOGGLE_VIDEO:
               const callSockets = this.userSocketMap.get(data.payload.receiverId) || [];
               // callSockets.forEach((s) => {
               //   s.emit(data.event, data.payload);
@@ -421,6 +423,8 @@ class SocketService {
         SOCKET_EVENTS_SERVER.CALL_RINGING,
         SOCKET_EVENTS_SERVER.USER_BUSY,
         SOCKET_EVENTS_SERVER.MISSED_CALL,
+        SOCKET_EVENTS_SERVER.TOGGLE_VIDEO,
+        SOCKET_EVENTS_SERVER.TOGGLE_AUDIO,
       ];
       CALL_EVENTS.forEach((event) => {
         socket.on(event, (payload) => {
