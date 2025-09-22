@@ -28,6 +28,7 @@ export const FRONTEND_URL = process.env.FRONTEND_URL;
 export const REDIS_USER = process.env.REDIS_USER;
 export const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 export const REDIS_HOST = process.env.REDIS_HOST;
+export const REDIS_PORT = process.env.REDIS_PORT;
 
 export const KAFKA_BROKER = process.env.KAFKA_BROKER;
 
